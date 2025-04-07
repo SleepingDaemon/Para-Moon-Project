@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,17 +19,20 @@ namespace ParaMoon
         [SerializeField] string _look = "Look";
         [SerializeField] string _move = "Move";
         [SerializeField] string _jump = "Jump";
+        [SerializeField] string _walk = "Walk";
         [SerializeField] string _sprint = "Sprint";
 
         InputActionMap _currentMap;
         InputAction _lookAction;
         InputAction _moveAction;
         InputAction _jumpAction;
+        InputAction _walkAction;
         InputAction _sprintAction;
 
         public Vector2 Look { get; private set; }
         public Vector2 Move { get; private set; }
         public bool Jump { get; private set; }
+        public bool Walk { get; private set; }
         public bool Sprint { get; private set; }
 
         public static InputManager Instance { get; private set; }
@@ -39,6 +43,7 @@ namespace ParaMoon
             _lookAction.Enable();
             _moveAction.Enable();
             _jumpAction.Enable();
+            _walkAction.Enable();
             _sprintAction.Enable();
         }
 
@@ -48,6 +53,7 @@ namespace ParaMoon
             _lookAction.Disable();
             _moveAction.Disable();
             _jumpAction.Disable();
+            _walkAction.Disable();
             _sprintAction.Disable();
         }
 
@@ -68,6 +74,7 @@ namespace ParaMoon
             _lookAction = _currentMap.FindAction(_look);
             _moveAction = _currentMap.FindAction(_move);
             _jumpAction = _currentMap.FindAction(_jump);
+            _walkAction = _currentMap.FindAction(_walk);
             _sprintAction = _currentMap.FindAction(_sprint);
 
             RegisterInputActions();
@@ -75,54 +82,21 @@ namespace ParaMoon
 
         private void RegisterInputActions()
         {
-            _lookAction.performed += LookAction_performed;
-            _lookAction.canceled += LookAction_canceled;
-            _moveAction.performed += MoveAction_performed;
-            _moveAction.canceled += MoveAction_canceled;
-            _jumpAction.performed += JumpAction_performed;
-            _jumpAction.canceled += JumpAction_canceled;
-            _sprintAction.performed += SprintAction_performed;
-            _sprintAction.canceled += SprintAction_canceled;
+            _lookAction.performed += ctx => Look = ctx.ReadValue<Vector2>();
+            _lookAction.canceled += ctx => Look = Vector2.zero;
+            _moveAction.performed += ctx => Move = ctx.ReadValue<Vector2>();
+            _moveAction.canceled += ctx => Move = Vector2.zero;
+            _jumpAction.performed += ctx => Jump = ctx.ReadValueAsButton();
+            _jumpAction.canceled += ctx => Jump = false;
+            _walkAction.performed += ctx => Walk = ctx.ReadValueAsButton();
+            _walkAction.canceled += ctx => Walk = false;
+            _sprintAction.performed += ctx => Sprint = ctx.ReadValueAsButton();
+            _sprintAction.canceled += ctx => Sprint = false;
         }
 
-        private void JumpAction_performed(InputAction.CallbackContext context)
-        {
-            Jump = context.ReadValueAsButton();
-        }
-
-        private void JumpAction_canceled(InputAction.CallbackContext context)
+        internal void ConsumeJump()
         {
             Jump = false;
-        }
-
-        private void SprintAction_performed(InputAction.CallbackContext context)
-        {
-            Sprint = context.ReadValueAsButton();
-        }
-
-        private void SprintAction_canceled(InputAction.CallbackContext context)
-        {
-            Sprint = false;
-        }
-
-        private void MoveAction_performed(InputAction.CallbackContext context)
-        {
-            Move = context.ReadValue<Vector2>();
-        }
-
-        private void MoveAction_canceled(InputAction.CallbackContext context)
-        {
-            Move = Vector2.zero;
-        }
-
-        private void LookAction_performed(InputAction.CallbackContext obj)
-        {
-            Look = obj.ReadValue<Vector2>();
-        }
-
-        private void LookAction_canceled(InputAction.CallbackContext context)
-        {
-            Look = Vector2.zero;
         }
     }
 }

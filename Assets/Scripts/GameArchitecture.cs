@@ -18,8 +18,8 @@
 //  |  | - Camera Control  |<----->| - AI Controller   |<------>| - Physics         |<----->| - Menus|   |
 //  |  | - Input Handler   |       | - Formation Mgr   |        | - Interaction Sys |       | - Map  |   |
 //  |  | - Inventory       |       | - Specializations |        | - Mission System  |       | - Tact |   |
-//  |  | - Weapons System  |       | - Behavior Trees  |        | - Faction System  |       +--------+   |
-//  |  | - Abilities       |       | - Context AI      |        | - Spawning System |                    |
+//  |  | - Weapons System  |       | - Behavior Trees  |        | - Faction System  |       | - Dial |   |
+//  |  | - Abilities       |       | - Context AI      |        | - Spawning System |       +--------+   |
 //  |  +-------------------+       +-------------------+        +-------------------+                    |
 //  |                                                                                                    |
 //  +----------------------------------------------------------------------------------------------------+
