@@ -23,7 +23,7 @@ namespace ParaMoon
         [Range(0, 1)][SerializeField] private float _airDrag = 0.5f;
 
         [Tooltip("The amount of drag applied to the player when on the ground. 0 = no drag, 1 = full drag")]
-        [Range(0, 1)][SerializeField] private float _groundDrag = 4f;
+        [SerializeField] private float _groundDrag = 4f;
 
         Player _player;
         Vector3 _moveDirection = Vector3.zero;
