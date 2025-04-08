@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace ParaMoon
 {
+    /// <summary>
+    /// Handles player movement, including walking, running, and jumping.
+    /// </summary>
     [RequireComponent(typeof(Player))]
     public class PlayerMovement : MonoBehaviour
     {
@@ -51,10 +54,23 @@ namespace ParaMoon
                 InputManager.Instance.ConsumeJump(); // Prevent multiple jumps from one button press
             }
 
-            // TODO: Reset jump counter when grounded
+            // Reset jump counter when grounded
+            if (_player.GroundDetection.IsGrounded && _player.PlayerRigidbody.linearVelocity.y <= 0.1f)
+            {
+                _jumpCount = 0;
+            }
         }
 
         private void FixedUpdate()
+        {
+            HandleMovement();
+
+            // Update cached velocity
+            Velocity = (transform.position - _lastPosition) / Time.fixedDeltaTime;
+            _lastPosition = transform.position;
+        }
+
+        private void HandleMovement()
         {
             Vector2 moveInput = InputManager.Instance.Move;
 
@@ -67,12 +83,42 @@ namespace ParaMoon
             IsSprinting = InputManager.Instance.Sprint;
             float currentSpeed = IsSprinting ? _sprintSpeed : (IsWalking ? _walkSpeed : _runSpeed);
 
-            // TODO: Check if grounded
+            if (_player.GroundDetection.IsGrounded)
+            {
+                // Handle slope movement
+                if (_player.GroundDetection.IsOnSlope)
+                {
+                    // Project movement onto slope
+                    Vector3 slopeDirection = Vector3.ProjectOnPlane(_moveDirection, _player.GroundDetection.SlopeHit.normal).normalized;
+                    _moveDirection = slopeDirection;
+                }
+
+                // Apply ground movement
+                Vector3 movementForce = 2f * currentSpeed * _moveDirection;
+                _player.PlayerRigidbody.AddForce(movementForce, ForceMode.Acceleration);
+            }
+            else
+            {
+                // Apply limited air control
+                Vector3 airMovement = _airControl * currentSpeed * _moveDirection;
+                _player.PlayerRigidbody.AddForce(airMovement, ForceMode.Acceleration);
+            }
+
+            // Limit horizontal velocity to prevent excessive speed
+            Vector3 horizontalVelocity = new(_player.PlayerRigidbody.linearVelocity.x, 0, _player.PlayerRigidbody.linearVelocity.z);
+            if (horizontalVelocity.magnitude > currentSpeed)
+            {
+                Vector3 limitedVelocity = horizontalVelocity.normalized * currentSpeed;
+                _player.PlayerRigidbody.linearVelocity = new Vector3(limitedVelocity.x, _player.PlayerRigidbody.linearVelocity.y, limitedVelocity.z);
+            }
         }
 
         private void Jump()
         {
-            throw new NotImplementedException();
+            // Add upward force for jumping
+            _player.PlayerRigidbody.linearVelocity = new Vector3(_player.PlayerRigidbody.linearVelocity.x, 0, _player.PlayerRigidbody.linearVelocity.z);
+            _player.PlayerRigidbody.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
+            _jumpCount++;
         }
     }
 }
