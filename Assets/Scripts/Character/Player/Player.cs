@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.LowLevel;
 
 namespace ParaMoon
 {
@@ -10,21 +9,25 @@ namespace ParaMoon
         [SerializeField] private Transform playerBody;
         [SerializeField] private Transform cameraHolder;
 
-        private PlayerMovement movement;
-        private PlayerGroundDetector groundDetection;
-        private PlayerLook look;
-        private CameraWobble cameraWobble;
-
-        // Properties to access components
-        public PlayerMovement Movement => movement;
-        public PlayerGroundDetector GroundDetection => groundDetection;
-        public PlayerLook Look => look;
-        public CameraWobble CameraWobble => cameraWobble;
+        public FPSController Controller;
+        public InventoryManager Inventory { get; private set; }
         public Rigidbody PlayerRigidbody { get; private set; }
         public CapsuleCollider PlayerCollider { get; private set; }
 
+        public static Player Instance { get; private set; }
+
         private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else if (Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             // Setup references if not assigned
             if (playerBody == null)
                 playerBody = transform;
@@ -32,18 +35,14 @@ namespace ParaMoon
             if (cameraHolder == null)
                 cameraHolder = Camera.main.transform;
 
+            Controller = GetComponent<FPSController>();
+            Inventory = GetComponent<InventoryManager>();
             PlayerRigidbody = GetComponent<Rigidbody>();
             PlayerCollider = GetComponent<CapsuleCollider>();
 
             // Configure rigidbody for FPS controller
             PlayerRigidbody.constraints = RigidbodyConstraints.FreezeRotation;
             PlayerRigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-
-            // Initialize components
-            movement = gameObject.AddComponent<PlayerMovement>();
-            groundDetection = gameObject.AddComponent<PlayerGroundDetector>();
-            look = gameObject.AddComponent<PlayerLook>();
-            cameraWobble = gameObject.AddComponent<CameraWobble>();
 
             // Setup cursor
             Cursor.lockState = CursorLockMode.Locked;
@@ -53,37 +52,36 @@ namespace ParaMoon
         // For external scripts to disable/enable movement
         public void SetMovementEnabled(bool enabled)
         {
-            movement.enabled = enabled;
-            look.enabled = enabled;
+            Controller.enabled = enabled;
 
             if (!enabled)
-            {
                 PlayerRigidbody.linearVelocity = Vector3.zero;
-            }
         }
 
         public bool IsMoving()
         {
-            return movement.Velocity.magnitude > 0.1f;
+            return Controller.Velocity.magnitude > 0.1f;
         }
 
         public bool IsRunning()
         {
-            return movement.IsSprinting;
+            return Controller.IsSprinting;
         }
 
         public bool IsWalking()
         {
-            return movement.IsWalking;
+            return Controller.IsWalking;
         }
 
         // Optional: Add footstep sounds based on movement
         public float GetMovementIntensity()
         {
-            if (!groundDetection.IsGrounded) return 0;
+            if (!Controller.IsGrounded) 
+                return 0;
 
-            Vector3 flatVelocity = new(movement.Velocity.x, 0, movement.Velocity.z);
-            return flatVelocity.magnitude / movement.RunSpeed; // 0 to 1 value
+            Vector3 flatVelocity = new(Controller.Velocity.x, 0, Controller.Velocity.z);
+            return flatVelocity.magnitude / Controller.SprintSpeed; // 0 to 1 value
         }
     }
+    
 }

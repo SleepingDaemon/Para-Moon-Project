@@ -9,6 +9,12 @@
         "com.unity.modules.unitywebrequest": "1.0.0"
       }
     },
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.6",
       "depth": 0,
@@ -302,6 +308,13 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "nothke.dxhighlighter": {
+      "version": "https://github.com/nothke/dx-highlighter.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "9ad567ed87c12a5cf830cae9bb3bcb85260ed678"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
