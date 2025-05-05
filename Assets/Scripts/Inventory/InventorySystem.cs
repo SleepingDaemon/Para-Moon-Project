@@ -1,25 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace ParaMoon
 {
-    public class InventoryGrid : IInventory, IInventoryProvider
+    public class InventorySystem : IInventory
     {
         readonly Vector2Int _gridSize;
         readonly Dictionary<Vector2Int, Item> _itemGrid = new();
         readonly Dictionary<Item, Vector2Int> _itemPositions = new();
+        readonly InventoryData _inventoryData;
 
         public Vector2Int GridSize => _gridSize;
-
-        public IInventory Inventory => this;
 
         public event Action<IItem, Vector2Int> OnItemAdded;
         public event Action<IItem, Vector2Int> OnItemRemoved;
         public event Action<IItem, Vector2Int, Vector2Int> OnItemMoved;
 
-        public InventoryGrid(InventoryData data)
+        public InventorySystem(InventoryData data)
         {
+            _inventoryData = data;
             _gridSize = data.Size;
         }
 
@@ -62,7 +63,7 @@ namespace ParaMoon
             return true;
         }
 
-        public bool TryAddItem(IItem item, Vector2Int position)
+        public virtual bool TryAddItem(IItem item, Vector2Int position)
         {
             if (item == null || !IsPositionValid(position, item.Size))
                 return false;
@@ -115,7 +116,7 @@ namespace ParaMoon
             return false; // No available position found
         }
 
-        public bool TryMoveItem(Vector2Int fromPosition, Vector2Int toPosition)
+        public virtual bool TryMoveItem(Vector2Int fromPosition, Vector2Int toPosition)
         {
             if (!_itemGrid.TryGetValue(fromPosition, out Item item))
                 return false;
@@ -124,17 +125,17 @@ namespace ParaMoon
             Vector2Int fromOrigin = FindItemOriginPosition(fromPosition, item);
 
             // Check if the new position is valid and free
-            if (!IsPositionValid(toPosition, item.Size))
+            if (!IsPositionValid(toPosition, item.Data.Size))
                 return false;
 
             // Check if the new position is free (ignoring the current item)
-            if (!IsPositionFreeExcept(toPosition, item.Size, item))
+            if (!IsPositionFreeExcept(toPosition, item.Data.Size, item))
                 return false;
 
             // Remove item from grid but keep a reference
-            for (int y = 0; y < item.Size.y; y++)
+            for (int y = 0; y < item.Data.Size.y; y++)
             {
-                for (int x = 0; x < item.Size.x; x++)
+                for (int x = 0; x < item.Data.Size.x; x++)
                 {
                     Vector2Int cellPosition = fromOrigin + new Vector2Int(x, y);
                     _itemGrid.Remove(cellPosition);
@@ -142,9 +143,9 @@ namespace ParaMoon
             }
 
             // Add item at new position
-            for (int y = 0; y < item.Size.y; y++)
+            for (int y = 0; y < item.Data.Size.y; y++)
             {
-                for (int x = 0; x < item.Size.x; x++)
+                for (int x = 0; x < item.Data.Size.x; x++)
                 {
                     Vector2Int cellPosition = toPosition + new Vector2Int(x, y);
                     _itemGrid[cellPosition] = item;
@@ -193,9 +194,9 @@ namespace ParaMoon
             Vector2Int itemPosition = FindItemOriginPosition(position, inventoryItem);
 
             // Remove from all cells
-            for (int y = 0; y < inventoryItem.Size.y; y++)
+            for (int y = 0; y < inventoryItem.Data.Size.y; y++)
             {
-                for (int x = 0; x < inventoryItem.Size.x; x++)
+                for (int x = 0; x < inventoryItem.Data.Size.x; x++)
                 {
                     Vector2Int cellPosition = itemPosition + new Vector2Int(x, y);
                     _itemGrid.Remove(cellPosition);
@@ -218,9 +219,9 @@ namespace ParaMoon
                 return originPosition;
 
             // Fallback search method if position tracking fails
-            for (int y = 0; y < item.Size.y; y++)
+            for (int y = 0; y < item.Data.Size.y; y++)
             {
-                for (int x = 0; x < item.Size.x; x++)
+                for (int x = 0; x < item.Data.Size.x; x++)
                 {
                     Vector2Int testPosition = new Vector2Int(x, y);
 
@@ -231,9 +232,9 @@ namespace ParaMoon
                     bool isOrigin = true;
 
                     // Check if all cells in the item's area are the same item
-                    for (int j = 0; j < item.Size.y && isOrigin; j++)
+                    for (int j = 0; j < item.Data.Size.y && isOrigin; j++)
                     {
-                        for (int i = 0; i < item.Size.x && isOrigin; i++)
+                        for (int i = 0; i < item.Data.Size.x && isOrigin; i++)
                         {
                             Vector2Int checkPosition = testPosition + new Vector2Int(i, j);
 
@@ -252,7 +253,7 @@ namespace ParaMoon
 
         public IEnumerable<(Item item, Vector2Int position)> GetAllItems()
         {
-            HashSet<Item> processedItems = new HashSet<Item>();
+            HashSet<Item> processedItems = new();
 
             foreach (var kvp in _itemGrid)
             {

@@ -17,10 +17,8 @@ namespace ParaMoon
             if (interactable is ICollectable collectable)
             {
                 // Try to add to inventory
-                IInventoryProvider inventoryProvider = interactor.GameObject.GetComponent<IInventoryProvider>();
-
-                if (inventoryProvider != null)
-                    return collectable.Collect(inventoryProvider.Inventory);
+                if (interactor.GameObject.TryGetComponent<IInventoryProvider>(out var inventoryProvider))
+                    return collectable.Collect(interactor, inventoryProvider.Inventory);
                 else
                     Debug.LogWarning($"Interactor {interactor.GameObject.name} does not have an inventory provider.");
             }

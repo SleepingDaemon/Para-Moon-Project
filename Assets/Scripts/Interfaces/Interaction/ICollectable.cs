@@ -16,6 +16,11 @@
          * @param inventory The inventory to collect the item into
          * @return True if the item was collected successfully, false otherwise
          */
-        bool Collect(IInventory inventory);
+        bool Collect(IInteractor interactor, IInventory inventory);
+    }
+
+    public interface IContainer : IInteractable
+    {
+        void Open(IInteractor interactor);
     }
 }

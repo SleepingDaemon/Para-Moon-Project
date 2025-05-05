@@ -3,7 +3,7 @@
 namespace ParaMoon
 {
 
-    [CreateAssetMenu(fileName = "New Grid Item", menuName = "Para Moon/Inventory/Grid Item")]
+    [CreateAssetMenu(fileName = "New Item", menuName = "Para Moon/Inventory/Item")]
     public class ItemData : ScriptableObject
     {
         [Header("Basic Information")]
@@ -33,13 +33,14 @@ namespace ParaMoon
         public string Description => _description;
         public Sprite Icon => _icon;
         public ItemType ItemType => _itemType;
+        public int Width => _width;
+        public int Height => _height;
         public Vector2Int Size => new(_width, _height);
         public bool IsStackable => _isStackable;
         public int MaxStackSize => _isStackable ? _maxStackSize : 1;
         public int Value => _value;
         public float Weight => _weight;
 
-        // Create an instance of the item
         public Item CreateItem(int stackSize = 1)
         {
             return new Item(this, stackSize);

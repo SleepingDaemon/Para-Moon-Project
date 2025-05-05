@@ -46,9 +46,12 @@ namespace ParaMoon
     public enum ContainerType
     {
         None,
-        Inventory,
+        Player,
+        Vendor,
+        Loot,
         Storage,
-        Equipment,
-        Crafting,
+        Implant,
+        Armor,
+        Constructing,
     }
 }

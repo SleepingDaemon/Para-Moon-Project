@@ -4,10 +4,10 @@
     {
         None,
         Consumable,
-        Equipment,
+        Weapon,
+        Armor,
         Implant,
         Tool,
-        Weapon,
         Ammunition,
     }
 }

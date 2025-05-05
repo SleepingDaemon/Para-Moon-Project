@@ -16,7 +16,7 @@ MonoBehaviour:
   _icon: {fileID: 21300000, guid: 0363f5ea2e36c4b4c90999a1c614bf7c, type: 3}
   _itemName: Shabby Vest
   _description: 
-  _itemType: 2
+  _itemType: 3
   _width: 3
   _height: 3
   _canRotate: 0
@@ -25,4 +25,4 @@ MonoBehaviour:
   _value: 0
   _weight: 0
   _slot: 1
-  _equipmentModel: {fileID: 0}
+  _armorModel: {fileID: 0}

@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using Unity.VisualScripting;
+using UnityEngine;
 
 namespace ParaMoon
 {
-    public class CollectibleItem : HighlightableBase, IInteractable, ICollectable
+    public class CollectibleItem : HighlightableBase, ICollectable
     {
         [SerializeField] ItemData _item;
         [SerializeField] int _quantity = 1;
@@ -17,9 +19,8 @@ namespace ParaMoon
             if (string.IsNullOrEmpty(_interactionData.PromptText))
                 _interactionData.PromptText = $"Pick up {_item.Name}";
 
-            // Set the interaction type to Pickup if it's not already set to Use.
-            // This ensures that the item is collected when interacted with.
-            if (_interactionData.Type == InteractionType.Use)
+            // Set the interaction type to Pickup
+            if (_interactionData.Type != InteractionType.Pickup)
                 _interactionData.Type = InteractionType.Pickup;
 
             // Set display name from the item if not specified
@@ -38,8 +39,17 @@ namespace ParaMoon
          */
         public bool CanInteract(IInteractor interactor)
         {
+            var hasInventoryProvider = interactor.GameObject.GetComponent<IInventoryProvider>() != null;
+            if (!hasInventoryProvider)
+            {
+                Debug.LogWarning($"[CollectibleItem] Interactor does not have an inventory provider: {interactor.GameObject.name}");
+
+                // Log the components on the interactor for debugging
+                Debug.Log($"Components on {interactor.GameObject.name}: {string.Join(", ", interactor.GameObject.GetComponents<Component>().Select(c => c.GetType().Name))}");
+            }
+
             // Check if the interactor has an inventory
-            return interactor.GameObject.GetComponent<IInventoryProvider>() != null;
+            return hasInventoryProvider;
         }
 
         /**
@@ -56,24 +66,38 @@ namespace ParaMoon
          * @param inventory The inventory to collect the item into
          * @return True if the item was collected successfully, false otherwise
          */
-        public bool Collect(IInventory inventory)
+        public bool Collect(IInteractor interactor, IInventory inventory)
         {
-            //if (inventory.TryAddItem(_item, _quantity))
-            //{
-            //    // Show feedback notification
-            //    // TODO: NotificationManager.Instance.ShowNofifcation($"Picked up {_quantity}x {_item.Name}");
+            if (interactor == null || inventory == null)
+            {
+                Debug.LogError("[CollectibleItem] Null interactor or inventory");
+                return false;
+            }
 
-            //    // Remove item from the world
-            //    gameObject.SetActive(false);
-            //    return true;
-            //}
-            //else
-            //{
-            //    // NotificationManager.Instance.ShowNotification("Inventory is full");
-            //    return false;
-            //}
+            Debug.Log($"[CollectibleItem] Collecting {_item.Name} into inventory of type {inventory.GetType().Name}");
 
-            return false; // Placeholder for actual inventory logic
+            // Create the item
+            var item = _item.CreateItem(_quantity);
+
+            // Use the provided inventory directly
+            bool added = inventory.TryAddItem(item, out _);
+
+            if (added)
+            {
+                Debug.Log($"Successfully collected {_quantity}x {_item.Name}");
+                // Show feedback notification
+                // TODO: NotificationManager.Instance.ShowNofifcation($"Picked up {_quantity}x {_item.Name}");
+
+                // Remove item from the world
+                gameObject.SetActive(false);
+                return true;
+            }
+            else
+            {
+                // NotificationManager.Instance.ShowNotification("Inventory is full");
+                Debug.LogWarning($"[CollectibleItem] Failed to add {_item.Name} - inventory full or invalid position");
+                return false;
+            }
         }
 
         /**

@@ -9,7 +9,6 @@ namespace ParaMoon
         [SerializeField] RectTransform _menu;
         [SerializeField] RectTransform _dragHeader;
 
-        MenuManager _menuManager;
         RectTransform _rectTransform;
         Canvas _canvas;
         CanvasGroup _canvasGroup;
@@ -22,7 +21,6 @@ namespace ParaMoon
 
         private void Awake()
         {
-            _menuManager = GameObject.FindFirstObjectByType<MenuManager>();
             _rectTransform = GetComponent<RectTransform>();
             _canvas = GetComponentInParent<Canvas>();
 
@@ -34,12 +32,6 @@ namespace ParaMoon
 
             // Calculate screen bounds for restricting window position
             _screenBounds = new Vector2(Screen.width, Screen.height);
-        }
-
-        private void Start()
-        {
-            if (_menuManager == null)
-                _menuManager = GameObject.FindFirstObjectByType<MenuManager>();
         }
 
         public void OnBeginDrag(PointerEventData eventData)

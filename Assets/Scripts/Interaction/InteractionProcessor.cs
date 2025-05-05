@@ -24,7 +24,7 @@ namespace ParaMoon
         {
             { InteractionType.Pickup, new PickupInteractionStrategy() },
             //{ InteractionType.Use, new UseInteractionStrategy() },
-            //{ InteractionType.Open, new OpenInteractionStrategy() },
+            { InteractionType.Open, new OpenInteractionStrategy() },
             //{ InteractionType.Move, new MoveInteractionStrategy() },
             //{ InteractionType.Read, new ReadInteractionStrategy() },
             //{ InteractionType.TalkTo, new TalkToInteractionStrategy() }

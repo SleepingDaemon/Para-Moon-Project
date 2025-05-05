@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace ParaMoon
 {
@@ -80,7 +81,9 @@ namespace ParaMoon
                 }
             }
             else
+            {
                 _interactionUIController.HideInteractionPrompt();
+            }
         }
 
         #endregion

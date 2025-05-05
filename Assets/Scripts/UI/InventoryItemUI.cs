@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -21,6 +22,7 @@ namespace ParaMoon
 
         public IItem Item => _item;
         public Vector2Int GridPosition => _gridPosition;
+        public InventoryGridUI ParentInventory => _parentInventory;
 
         private void Awake()
         {
@@ -41,19 +43,31 @@ namespace ParaMoon
             _gridPosition = position;
             _parentInventory = inventory;
 
+            // Debug icon assignment
+            if (_item.Icon == null)
+            {
+                Debug.LogError($"Item '{_item.Name}' has null icon!");
+            }
+            else
+            {
+                Debug.Log($"Setting icon for '{_item.Name}': {_item.Icon.name}");
+            }
+
             // Set up visual elements
             if (_itemIcon != null)
             {
                 _itemIcon.sprite = _item.Icon;
                 _itemIcon.preserveAspect = true;
                 _itemIcon.raycastTarget = true;
+                _itemIcon.enabled = true;
+                _itemIcon.color = new Color(1f, 1f, 1f, 1f);
 
                 // Make icon fill the item container
-                //RectTransform iconRect = _itemIcon.GetComponent<RectTransform>();
-                //iconRect.anchorMin = Vector2.zero;
-                //iconRect.anchorMax = Vector2.one;
-                //iconRect.offsetMin = Vector2.zero;
-                //iconRect.offsetMax = Vector2.zero;
+                RectTransform iconRect = _itemIcon.GetComponent<RectTransform>();
+                iconRect.anchorMin = Vector2.zero;
+                iconRect.anchorMax = Vector2.one;
+                iconRect.offsetMin = Vector2.zero;
+                iconRect.offsetMax = Vector2.zero;
             }
 
             // Ensure the root GameObject can receive raycasts

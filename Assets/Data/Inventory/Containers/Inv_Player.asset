@@ -17,7 +17,7 @@ MonoBehaviour:
   _width: 12
   _height: 8
   _cellSize: {x: 32, y: 32}
-  _spacing: {x: 2, y: 2}
+  _spacing: {x: 0, y: 0}
   _allowRotation: 1
   _allowItemStacking: 1
   _restrictItemTypes: 0

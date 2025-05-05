@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 
 namespace ParaMoon
@@ -13,9 +15,10 @@ namespace ParaMoon
 
         [Header("Settings")]
         [SerializeField] InventoryData _inventoryData;
-        [SerializeField] private Color normalSlotColor = Color.white;
-        [SerializeField] private Color highlightSlotColor = new(0.8f, 0.8f, 1f);
-        [SerializeField] private Color invalidSlotColor = new(1f, 0.6f, 0.6f);
+        [SerializeField] private Color _normalSlotColor = Color.white;
+        [SerializeField] private Color _highlightSlotColor = new(0.8f, 0.8f, 1f);
+        [SerializeField] private Color _invalidSlotColor = new(1f, 0.6f, 0.6f);
+        [SerializeField] bool _useSpecializedSlots = false;
 
         IInventory _inventory;
         Dictionary<Vector2Int, InventorySlotUI> _slots = new();
@@ -25,6 +28,18 @@ namespace ParaMoon
         Vector2Int _originalPosition;
         List<InventorySlotUI> _highlightedSlots = new();
 
+        public InventoryData InventoryData => _inventoryData;
+        public IInventory Inventory => _inventory;
+        public bool UseSpecializedSlots
+        {
+            get => _useSpecializedSlots;
+            set
+            {
+                _useSpecializedSlots = value;
+            }
+        }
+        public RectTransform GridContainer => _gridContainer;
+
         private void Awake()
         {
             if (_inventoryData == null)
@@ -33,15 +48,19 @@ namespace ParaMoon
                 return;
             }
 
-            // Create inventory grid
-            _inventory = new InventoryGrid(_inventoryData);
+            // Create inventory
+            _inventory = new InventorySystem(_inventoryData);
 
             // Subscribe to inventory events
             _inventory.OnItemAdded += HandleItemAdded;
             _inventory.OnItemRemoved += HandleItemRemoved;
             _inventory.OnItemMoved += HandleItemMoved;
 
-            InitializeGridUI();
+            // Only initialize grid UI if not using specialized slots
+            if (!_useSpecializedSlots)
+                InitializeGridUI();
+            else
+                InitializeGridContainer();
         }
 
         private void OnDestroy()
@@ -52,6 +71,29 @@ namespace ParaMoon
                 _inventory.OnItemRemoved -= HandleItemRemoved;
                 _inventory.OnItemMoved -= HandleItemMoved;
             }
+        }
+
+        public void InitializeGridContainer()
+        {
+            // Clear existing grid elements
+            foreach (Transform child in _gridContainer)
+            {
+                Destroy(child.gameObject);
+            }
+
+            _slots.Clear();
+
+            // Calculate grid dimensions
+            float cellWidth = _inventoryData.CellSize.x;
+            float cellHeight = _inventoryData.CellSize.y;
+            float spacingX = _inventoryData.Spacing.x;
+            float spacingY = _inventoryData.Spacing.y;
+
+            float totalWidth = _inventoryData.Size.x * (cellWidth + spacingX) - spacingX;
+            float totalHeight = _inventoryData.Size.y * (cellHeight + spacingY) - spacingY;
+
+            // Set grid container size
+            _gridContainer.sizeDelta = new Vector2(totalWidth, totalHeight);
         }
 
         private void InitializeGridUI()
@@ -87,6 +129,108 @@ namespace ParaMoon
             }
         }
 
+        public void RefreshGrid()
+        {
+            // Clear all highlights
+            ClearHighlights();
+
+            // Reset any dragged item state
+            _draggedItem = null;
+
+            // Get all items and their positions from the inventory
+            var inventoryItems = _inventory.GetAllItems().ToList();
+
+            // Track items that need to be created or updated
+            HashSet<IItem> processedItems = new();
+
+            // Update existing item UIs
+            foreach (var (existingItem, itemUI) in _itemUIs)
+            {
+                bool found = false;
+
+                // Check if the item is still in the inventory
+                foreach (var (invItem, position) in inventoryItems)
+                {
+                    if (invItem == existingItem)
+                    {
+                        // Mark item as processed
+                        processedItems.Add(existingItem);
+
+                        // ALWAYS update position for items in specialized slots, even if the grid position hasn't changed
+                        // This ensures that after a failed drop, items are properly repositioned
+                        InventorySlotUI slot = null;
+                        bool isSpecializedSlot = _useSpecializedSlots && _slots.TryGetValue(position, out slot) &&
+                                                 slot is SpecializedSlotUI;
+
+                        // Update if position changed OR if this is a specialized slot (to ensure correct positioning)
+                        if (itemUI.GridPosition != position || isSpecializedSlot)
+                        {
+                            itemUI.SetGridPosition(position);
+
+                            if (isSpecializedSlot)
+                            {
+                                RectTransform itemRect = itemUI.GetComponent<RectTransform>();
+                                RectTransform slotRect = slot.GetComponent<RectTransform>();
+
+                                // Always ensure specialized items are direct children of their slots
+                                itemRect.SetParent(slotRect, false);
+
+                                // Reset position - force to zero to fix positioning issues
+                                itemRect.anchoredPosition = Vector2.zero;
+
+                                if (existingItem is Item actualItem)
+                                    actualItem.ForceSize(new Vector2Int(1, 1));
+                            }
+                            else
+                            {
+                                // Always update regular grid positioning too
+                                itemUI.transform.SetParent(_gridContainer);
+                                itemUI.GetComponent<RectTransform>().anchoredPosition = GridToLocalPosition(position);
+
+                                if (existingItem is Item actualItem)
+                                    actualItem.ResetSize();
+                            }
+                        }
+
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    Destroy(itemUI.gameObject);
+                    _itemUIs.Remove(existingItem);
+                }
+            }
+
+            // Create UIs for any items in inventory that don't have UIs yet
+            foreach (var (newItem, position) in inventoryItems)
+            {
+                if (!processedItems.Contains(newItem))
+                {
+                    CreateItemUI(newItem, position);
+
+                    if (_useSpecializedSlots && _slots.TryGetValue(position, out var slot))
+                    {
+                        if (_itemUIs.TryGetValue(newItem, out var newItemUI))
+                        {
+                            RectTransform itemRect = newItemUI.GetComponent<RectTransform>();
+                            RectTransform slotRect = slot.GetComponent<RectTransform>();
+
+                            itemRect.SetParent(slotRect, false);
+                            itemRect.anchoredPosition = Vector2.zero;
+
+                            if (newItem is Item actualItem)
+                            {
+                                actualItem.ForceSize(new Vector2Int(1, 1));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private void CreateSlot(Vector2Int gridPosition)
         {
             GameObject slotObj = Instantiate(_slotPrefab, _gridContainer);
@@ -106,7 +250,7 @@ namespace ParaMoon
             }
         }
 
-        private Vector2 GridToLocalPosition(Vector2Int gridPosition)
+        public Vector2 GridToLocalPosition(Vector2Int gridPosition)
         {
             float x = gridPosition.x * (_inventoryData.CellSize.x + _inventoryData.Spacing.x);
             float y = -gridPosition.y * (_inventoryData.CellSize.y + _inventoryData.Spacing.y);
@@ -139,12 +283,12 @@ namespace ParaMoon
         }
 
         // Event handlers for inventory changes
-        private void HandleItemAdded(IItem item, Vector2Int position)
+        public void HandleItemAdded(IItem item, Vector2Int position)
         {
             CreateItemUI(item, position);
         }
 
-        private void HandleItemRemoved(IItem item, Vector2Int position)
+        public void HandleItemRemoved(IItem item, Vector2Int position)
         {
             if (_itemUIs.TryGetValue(item, out InventoryItemUI itemUI))
             {
@@ -153,38 +297,100 @@ namespace ParaMoon
             }
         }
 
-        private void HandleItemMoved(IItem item, Vector2Int fromPosition, Vector2Int toPosition)
+        public void HandleItemMoved(IItem item, Vector2Int fromPosition, Vector2Int toPosition)
         {
             if (_itemUIs.TryGetValue(item, out InventoryItemUI itemUI))
             {
                 // Update the item UI's position
-                itemUI.SetGridPosition(toPosition);
-                itemUI.GetComponent<RectTransform>().anchoredPosition = GridToLocalPosition(toPosition);
+                UpdateItemUI(item, toPosition);
             }
         }
 
         private void CreateItemUI(IItem item, Vector2Int position)
         {
-            GameObject itemObject = Instantiate(_itemPrefab, _gridContainer);
+            // Check if this is a specialized slot
+            InventorySlotUI slotUI = null;
+            bool isSpecializedSlot = _slots.TryGetValue(position, out slotUI) && slotUI is SpecializedSlotUI;
+
+            // Create parent for the item
+            Transform parent = isSpecializedSlot ? slotUI.transform : _gridContainer;
+
+            GameObject itemObject = Instantiate(_itemPrefab, parent);
             RectTransform rectTransform = itemObject.GetComponent<RectTransform>();
 
-            // Position the item
-            rectTransform.anchoredPosition = GridToLocalPosition(position);
+            if (isSpecializedSlot)
+            {
+                // For specialized slots, position directly within the slot
+                rectTransform.anchoredPosition = Vector2.zero;
 
-            // Size the item
-            float itemWidth = item.Size.x * _inventoryData.CellSize.x +
-                (item.Size.x - 1) * _inventoryData.Spacing.x;
-            float itemHeight = item.Size.y * _inventoryData.CellSize.y +
-                (item.Size.y - 1) * _inventoryData.Spacing.y;
+                // Force size to 1x1 for specialized slots
+                if (item is Item actualItem)
+                {
+                    actualItem.ForceSize(new Vector2Int(1, 1));
+                }
 
-            rectTransform.sizeDelta = new Vector2(itemWidth, itemHeight);
+                float itemWidth = _inventoryData.CellSize.x;
+                float itemHeight = _inventoryData.CellSize.y;
+                rectTransform.sizeDelta = new Vector2(itemWidth, itemHeight);
+            }
+            else
+            {
+                // Normal inventory positioning
+                rectTransform.anchoredPosition = GridToLocalPosition(position);
+
+                // Size the item
+                float itemWidth = item.Size.x * _inventoryData.CellSize.x +
+                    (item.Size.x - 1) * _inventoryData.Spacing.x;
+                float itemHeight = item.Size.y * _inventoryData.CellSize.y +
+                    (item.Size.y - 1) * _inventoryData.Spacing.y;
+
+                rectTransform.sizeDelta = new Vector2(itemWidth, itemHeight);
+            }
 
             // Set up item UI component
-            InventoryItemUI itemUI = itemObject.GetComponent<InventoryItemUI>();
-            if (itemUI != null)
+            if (itemObject.TryGetComponent<InventoryItemUI>(out var itemUI))
             {
                 itemUI.Initialize(item, position, this);
                 _itemUIs[item] = itemUI;
+            }
+        }
+
+        public void UpdateItemUI(IItem item, Vector2Int position)
+        {
+            if (_itemUIs.TryGetValue(item, out InventoryItemUI itemUI))
+            {
+                InventorySlotUI slotUI = null;
+                bool isSpecializedSlot = _useSpecializedSlots && _slots.TryGetValue(position, out slotUI) && 
+                                         slotUI is SpecializedSlotUI;
+
+                // Update position
+                itemUI.SetGridPosition(position);
+
+                // Update parenting and positioning
+                if (isSpecializedSlot)
+                {
+                    // Reparent to specialized slot
+                    itemUI.transform.SetParent(slotUI.transform);
+                    itemUI.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+
+                    // Force size for specialized slots
+                    if (item is Item actualItem)
+                    {
+                        actualItem.ForceSize(new Vector2Int(1, 1));
+                    }
+                }
+                else
+                {
+                    // Regular grid positioning
+                    itemUI.transform.SetParent(_gridContainer);
+                    itemUI.GetComponent<RectTransform>().anchoredPosition = GridToLocalPosition(position);
+
+                    // Reset size
+                    if (item is Item actualItem)
+                    {
+                        actualItem.ResetSize();
+                    }
+                }
             }
         }
 
@@ -215,6 +421,12 @@ namespace ParaMoon
             // Highlight potential drop area
             HighlightDropArea(targetPosition, _draggedItem.Item.Size,
                 _inventory.IsPositionFreeExcept(targetPosition, _draggedItem.Item.Size, _draggedItem.Item));
+
+            // If dragged item is over a different inventory, clear highlights
+            if (!RectTransformUtility.RectangleContainsScreenPoint(_gridContainer, screenPosition, null))
+            {
+                ClearHighlights();
+            }
         }
 
         private Vector2Int AdjustPositionForMultiCellItem(Vector2Int targetPosition)
@@ -236,21 +448,77 @@ namespace ParaMoon
             if (_draggedItem == null)
                 return;
 
-            // Convert screen position to grid position
-            Vector2Int targetPosition = ScreenToGridPosition(screenPosition);
+            // Check if the item was dropped on a valid target
+            // If it's dropped somewhere else (another inventory's slot), let the handler deal with it
+            bool droppedOnValidTarget = false;
 
-            // Try to move the item
-            bool success = _inventory.TryMoveItem(_originalPosition, targetPosition);
-
-            if (!success)
+            // Only try to handle internal movement if the pointer is over the same inventory
+            if (RectTransformUtility.RectangleContainsScreenPoint(_gridContainer, screenPosition, null))
             {
-                // Return item to original position
-                _draggedItem.GetComponent<RectTransform>().anchoredPosition =
-                    GridToLocalPosition(_originalPosition);
+                // Convert screen position to grid position
+                Vector2Int targetPosition = ScreenToGridPosition(screenPosition);
+
+                // Try to move the item within our own inventory
+                droppedOnValidTarget = _inventory.TryMoveItem(_originalPosition, targetPosition);
+
+                // If the move failed and we're using specialized slots, we need to ensure the item
+                // returns to its original specialized slot correctly
+                if (!droppedOnValidTarget && _useSpecializedSlots)
+                {
+                    // Check if the original position was a specialized slot
+                    bool wasInSpecializedSlot = _slots.TryGetValue(_originalPosition, out InventorySlotUI originalSlot) &&
+                                                 originalSlot is SpecializedSlotUI;
+
+                    if (wasInSpecializedSlot)
+                    {
+                        // Reset the item directly to the original specialized slot
+                        _draggedItem.transform.SetParent(originalSlot.transform);
+                        _draggedItem.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+                    }
+                    else
+                    {
+                        // Regular grid position reset
+                        _draggedItem.GetComponent<RectTransform>().anchoredPosition =
+                            GridToLocalPosition(_originalPosition);
+                    }
+                }
+                else if (!droppedOnValidTarget)
+                {
+                    // Standard reset for non-specialized slots
+                    _draggedItem.GetComponent<RectTransform>().anchoredPosition =
+                        GridToLocalPosition(_originalPosition);
+                }
+            }
+            else
+            {
+                // If dropped outside this inventory, reset to original position
+                // Check if it was in a specialized slot
+                InventorySlotUI originalSlot = null;
+                bool wasInSpecializedSlot = _useSpecializedSlots &&
+                                           _slots.TryGetValue(_originalPosition, out originalSlot) &&
+                                           originalSlot is SpecializedSlotUI;
+
+                if (wasInSpecializedSlot)
+                {
+                    // Reset to the specialized slot
+                    _draggedItem.transform.SetParent(originalSlot.transform);
+                    _draggedItem.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+                }
+                else
+                {
+                    // Standard position reset
+                    _draggedItem.GetComponent<RectTransform>().anchoredPosition =
+                        GridToLocalPosition(_originalPosition);
+                }
             }
 
-            _draggedItem = null;
-            ClearHighlights();
+            // Reset the dragged item reference if dropped on a valid target
+            if (droppedOnValidTarget)
+            {
+                _draggedItem = null;
+            }
+
+            RefreshGrid();
         }
 
         private void ClearHighlights()
@@ -264,7 +532,7 @@ namespace ParaMoon
 
         private void HighlightDropArea(Vector2Int position, Vector2Int size, bool isValid)
         {
-            Color highlightColor = isValid ? this.highlightSlotColor : invalidSlotColor;
+            Color highlightColor = isValid ? this._highlightSlotColor : _invalidSlotColor;
 
             for (int y = 0; y < size.y; y++)
             {
@@ -281,9 +549,6 @@ namespace ParaMoon
             }
         }
 
-        // IGridInventory interface exposure
-        public IInventory Inventory => _inventory;
-
         // Public methods for external interaction
         public bool TryGetItemAt(Vector2Int position, out IItem item)
         {
@@ -294,6 +559,83 @@ namespace ParaMoon
         public bool TryRemoveItemAt(Vector2Int position, out IItem item)
         {
             return _inventory.TryRemoveItem(position, out item);
+        }
+
+        public void SetInventory(IInventory inventory)
+        {
+            // Unsubscribe from old inventory events
+            if (_inventory != null)
+            {
+                _inventory.OnItemAdded -= HandleItemAdded;
+                _inventory.OnItemRemoved -= HandleItemRemoved;
+                _inventory.OnItemMoved -= HandleItemMoved;
+            }
+
+            ClearUI();
+            _inventory = inventory;
+
+            // Subscribe to new inventory events
+            if (_inventory != null)
+            {
+                _inventory.OnItemAdded += HandleItemAdded;
+                _inventory.OnItemRemoved += HandleItemRemoved;
+                _inventory.OnItemMoved += HandleItemMoved;
+            }
+
+            // Only initialize grid UI if not using specialized slots
+            if (!_useSpecializedSlots)
+            {
+                InitializeGridUI();
+
+                // Add existing items to the UI
+                if (_inventory != null)
+                {
+                    foreach (var (item, position) in _inventory.GetAllItems())
+                    {
+                        CreateItemUI(item, position);
+                    }
+                }
+            }
+            else
+            {
+                InitializeGridContainer();
+            }
+        }
+
+        private void ClearUI()
+        {
+            foreach (var itemUI in _itemUIs.Values)
+            {
+                Destroy(itemUI.gameObject);
+            }
+
+            _itemUIs.Clear();
+
+            foreach (Transform child in _gridContainer)
+            {
+                Destroy(child.gameObject);
+            }
+
+            _slots.Clear();
+        }
+
+        public void CancelItemDrag()
+        {
+            if (_draggedItem != null)
+            {
+                // Return item to original position
+                _draggedItem.GetComponent<RectTransform>().anchoredPosition =
+                    GridToLocalPosition(_originalPosition);
+
+                // Reset state
+                _draggedItem = null;
+                ClearHighlights();
+            }
+        }
+
+        public void RegisterSpecializedSlot(InventorySlotUI slot, Vector2Int position)
+        {
+            _slots[position] = slot;
         }
     }
 }

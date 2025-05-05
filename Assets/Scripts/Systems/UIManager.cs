@@ -21,14 +21,21 @@ namespace ParaMoon
         GameObject _tabLayer;
         GameObject _reticleLayer;
         GameObject _highlighter;
+        GameObject _playerInventoryWindow;
+        GameObject _containerInventoryWindow;
+        GameObject _armorInventoryWindow;
         //GameObject notificationLayer;
 
         InteractionUIController _promptController;
-        InventoryGridUI _inventoryUI;
+        InventoryGridUI _playerInventoryUI;
+        InventoryGridUI _containerInventoryUI;
+        InventoryGridUI _armorInventoryUI;
+        ContainerInteractionUI _containerInteractionUI;
+        CharacterEquipmentUI _characterEquipmentUI;
+        LoadingScreenController _loadingScreen;
 
         UIState _currentState = UIState.Gameplay;
         Stack<UIState> _stateHistory = new();
-        LoadingScreenController _loadingScreen;
 
         public UIState CurrentState => _currentState;
         public GameObject WindowSystemLayer => _windowLayer;
@@ -163,18 +170,49 @@ namespace ParaMoon
                     _gameplayHUDLayer = _mainCanvas.transform.Find("GameplayHUDLayer")?.gameObject;
 
                 if (_erosLayer == null)
+                {
                     _erosLayer = _mainCanvas.transform.Find("EROSPanel")?.gameObject;
+                    if (_erosLayer == null)
+                        Debug.LogError("[UIManager] EROSLayer not found in MainCanvas");
+
+                    Debug.Log("[UIManager] Found EROSLayer");
+                }
 
                 if (_erosLayer != null)
                 {
-                    if (_windowLayer == null)
-                    {
-                        _windowLayer = _erosLayer.transform.Find("WindowLayer")?.gameObject;
-                        _inventoryUI = GameObject.FindFirstObjectByType<InventoryGridUI>(FindObjectsInactive.Include);
+                    _containerInteractionUI = _erosLayer.GetComponentInChildren<ContainerInteractionUI>(true);
+                    if (_containerInteractionUI != null)
+                        _windowLayer = _containerInteractionUI.gameObject;
+                    else
+                        Debug.LogError("[UIManager] ContainerInteractionUI not found in EROSLayer");
 
-                        if (_inventoryUI == null)
+                    if (_windowLayer != null)
+                    {
+                        _containerInteractionUI = _windowLayer.GetComponent<ContainerInteractionUI>();
+                        if (_containerInteractionUI == null)
+                            Debug.LogError("[UIManager] ContainerInteractionUI not found in WindowLayer");
+
+                        _characterEquipmentUI = _windowLayer.GetComponent<CharacterEquipmentUI>();
+
+                        _playerInventoryWindow = _windowLayer.transform.Find("InventoryWindow")?.gameObject;
+                        _containerInventoryWindow = _windowLayer.transform.Find("ContainerWindow")?.gameObject;
+                        _armorInventoryWindow = _windowLayer.transform.Find("ArmorWindow")?.gameObject;
+
+                        if (_playerInventoryWindow == null || _containerInventoryWindow == null || _armorInventoryWindow == null)
+                            Debug.LogError("[UIManager] InventoryWindow or ContainerWindow not found in WindowLayer");
+
+                        _playerInventoryUI = _playerInventoryWindow.GetComponent<InventoryGridUI>();
+                        _containerInventoryUI = _containerInventoryWindow.GetComponent<InventoryGridUI>();
+                        _armorInventoryUI = _armorInventoryWindow.GetComponent<InventoryGridUI>();
+
+                        if (_armorInventoryWindow == null)
+                            Debug.LogError("[UIManager] ArmorInventoryWindow not found in WindowLayer");
+
+                        if (_playerInventoryUI == null)
                             Debug.LogError("[UIManager] InventoryGridUI not found in UI hierarchy");
                     }
+
+
 
                     if (_tabLayer == null)
                         _tabLayer = _erosLayer.transform.Find("TabLayer")?.gameObject;
@@ -260,7 +298,12 @@ namespace ParaMoon
                     if (_erosLayer != null)
                         _erosLayer.SetActive(false);
                     if (_windowLayer != null)
+                    {
+                        // Close the container UI when EROS is closed
+                        CloseContainerUI();
                         _windowLayer.SetActive(false);
+                    }
+
                     if (_tabLayer != null)
                         _tabLayer.SetActive(false);
 
@@ -390,6 +433,34 @@ namespace ParaMoon
             }
         }
 
+        // Get Current UI State
+        public UIState GetCurrentUIState()
+        {
+            return _currentState;
+        }
+
+        #region Inventory
+
+        public void OpenContainerUI(InventoryManager containerInventory, InventoryManager playerInventory, string containerName)
+        {
+            // Set UI state to EROS (menu)
+            PushUIState(UIState.EROSMenu);
+
+            // Make sure EROS layer is active first
+            if (_erosLayer != null && !_erosLayer.activeSelf)
+                _erosLayer.SetActive(true);
+
+            // Initialize and show the container-player UI
+            _containerInteractionUI.Initialize(containerInventory, playerInventory, containerName);
+        }
+
+        public void CloseContainerUI()
+        {
+            _containerInventoryWindow.SetActive(false);
+        }
+
+        #endregion
+
         #region Loading Screen
 
         public IEnumerator ShowTransition(float duration)
@@ -438,14 +509,31 @@ namespace ParaMoon
             return _promptController;
         }
 
-        public InventoryGridUI GetInventoryUI()
+        public InventoryGridUI GetPlayerInventoryUI()
         {
-            return _inventoryUI;
+            return _playerInventoryUI;
+        }
+
+        public InventoryGridUI GetArmorInventoryUI()
+        {
+            return _armorInventoryUI;
         }
 
         public LoadingScreenController GetLoadingScreenController()
         {
             return _loadingScreen;
+        }
+
+        public InventoryGridUI GetContainerUI(ContainerType type)
+        {
+            if (type == ContainerType.Player)
+                return _playerInventoryUI;
+            
+            if (type == ContainerType.Storage)
+                return _containerInventoryUI;
+
+            Debug.LogError($"[UIManager] No container UI found for type: {type}");
+            return null;
         }
 
         #endregion
