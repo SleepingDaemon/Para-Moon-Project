@@ -14,6 +14,8 @@ namespace ParaMoon
      * - Assign the main camera and UI camera in the inspector.
      * - Configure camera depth settings as needed.
      */
+    [Injectable]
+    [SceneExported("CameraManager")]
     public class CameraManager : ServiceBehaviour<CameraManager>
     {
         [System.Serializable]

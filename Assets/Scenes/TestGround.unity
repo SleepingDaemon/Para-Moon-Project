@@ -1376,6 +1376,51 @@ MonoBehaviour:
   m_EditMode: 0
   m_FlipNormals: 0
   isOnGrid: 1
+--- !u!1 &154300702
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 154300704}
+  - component: {fileID: 154300703}
+  m_Layer: 0
+  m_Name: '[SceneContext]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &154300703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 154300702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0226005a86d4e47b495e8b1524a1da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _sceneName: TestGround
+--- !u!4 &154300704
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 154300702}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &157207114 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9154053817969899095, guid: 10cbd334a7fad124fb864541937fac23, type: 3}
@@ -2766,8 +2811,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _inventoryData: {fileID: 11400000, guid: 2138605e985d72d479ddf7641f83a574, type: 2}
   _type: 4
-  _testItems:
-  - {fileID: 11400000, guid: bc456d89176a40a47ae254d3d184c1eb, type: 2}
 --- !u!43 &239939796
 Mesh:
   m_ObjectHideFlags: 0
@@ -4336,15 +4379,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 338817740}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c7093f455caa3b4e979d48d622b7f6c, type: 3}
+  m_Script: {fileID: 11500000, guid: 73c55cf464c16b34f8a7907029e04a0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _inventoryData: {fileID: 11400000, guid: 150eb00d822f50e43a43d7fedd667641, type: 2}
-  _type: 1
+  _armorInventoryData: {fileID: 11400000, guid: 950002ca59f3d4643b0aad07265ab9c9, type: 2}
+  _implantInventoryData: {fileID: 0}
+  _addTestItems: 1
   _testItems:
+  - {fileID: 11400000, guid: bc456d89176a40a47ae254d3d184c1eb, type: 2}
   - {fileID: 11400000, guid: baacfca8b53e5df4d893f7b2f15e4363, type: 2}
-  - {fileID: 11400000, guid: 74aaec43f8c59d24bacb9057348bceb1, type: 2}
-  - {fileID: 11400000, guid: e3b22770210a15243b739b01d6faaa0b, type: 2}
+  - {fileID: 11400000, guid: dfe8e0b344d0f7243b34cc1c22ee2b2c, type: 2}
 --- !u!43 &346544914
 Mesh:
   m_ObjectHideFlags: 0
@@ -32200,6 +32245,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 8224082437288747411}
+  - {fileID: 154300704}
   - {fileID: 175768392}
   - {fileID: 2013410475}
   - {fileID: 810964342}

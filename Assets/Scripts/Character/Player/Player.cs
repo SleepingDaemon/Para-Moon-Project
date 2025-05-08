@@ -9,8 +9,10 @@ namespace ParaMoon
         [SerializeField] private Transform playerBody;
         [SerializeField] private Transform cameraHolder;
 
+        PlayerInventory _inventory;
+
         public FPSController Controller;
-        public InventoryManager Inventory { get; private set; }
+        public PlayerInventory Inventory => _inventory;
         public Rigidbody PlayerRigidbody { get; private set; }
         public CapsuleCollider PlayerCollider { get; private set; }
 
@@ -36,7 +38,7 @@ namespace ParaMoon
                 cameraHolder = Camera.main.transform;
 
             Controller = GetComponent<FPSController>();
-            Inventory = GetComponent<InventoryManager>();
+            _inventory = GetComponent<PlayerInventory>();
             PlayerRigidbody = GetComponent<Rigidbody>();
             PlayerCollider = GetComponent<CapsuleCollider>();
 

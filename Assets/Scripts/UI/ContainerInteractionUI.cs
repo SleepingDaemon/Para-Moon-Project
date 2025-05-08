@@ -10,9 +10,9 @@ namespace ParaMoon
         [SerializeField] RectTransform _playerContainerPanel;
         [SerializeField] TMP_Text _containerTitle;
 
-        [SerializeField] InventoryGridUI _containerInventoryUI;
+        [SerializeField] InventoryGridView _containerInventoryUI;
 
-        InventoryGridUI _playerInventoryUI;
+        InventoryGridView _playerInventoryUI;
         InventoryManager _containerInventory;
         InventoryManager _playerInventory;
 
@@ -34,7 +34,7 @@ namespace ParaMoon
                 _containerTitle.text = containerName;
 
             // Connect the inventory to their UI
-            _containerInventoryUI.SetInventory(containerInventory.Inventory);
+            _containerInventoryUI.Initialize(containerInventory.Inventory);
 
             // Toggle the player inventory window since it's part of the Menu
             MenuManager menuManager = GameObject.FindFirstObjectByType<MenuManager>();
@@ -49,25 +49,6 @@ namespace ParaMoon
             }
 
             Debug.Log($"[ContainerInteractionUI] Container UI initialized with container:{containerInventory.name}, player:{playerInventory.name}");
-        }
-
-        public void Close()
-        {
-            // Disconnect the container inventory from the UI
-            if (_containerInventoryUI != null)
-            {
-                Debug.Log("[ContainerInteractionUI] Disconnecting container inventory from UI");
-                _containerInventoryUI.SetInventory(null);
-            }
-
-            _containerInventory = null;
-
-            // Hide the UI
-            _containerPanel.gameObject.SetActive(false);
-
-            // Close the EROS UI
-            if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
-                uiManager.PopUIState();
         }
     }
 }

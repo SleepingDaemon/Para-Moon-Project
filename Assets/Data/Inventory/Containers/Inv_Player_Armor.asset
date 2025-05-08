@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Inv_Player_Armor
   m_EditorClassIdentifier: 
   _containerType: 6
-  _containerName: 
+  _containerName: Armor
   _width: 1
   _height: 5
   _cellSize: {x: 64, y: 64}
-  _spacing: {x: 2, y: 2}
+  _spacing: {x: 0, y: 0}
   _allowRotation: 0
   _allowItemStacking: 0
   _restrictItemTypes: 1

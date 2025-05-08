@@ -7,6 +7,8 @@ namespace ParaMoon
     /// <summary>
     /// Singleton class to manage player input using Unity's new Input System.
     /// </summary>
+    [Injectable]
+    [SceneExported("InputManager")]
     public class InputManager : ServiceBehaviour<InputManager>
     {
         [Header("Input Settings")]

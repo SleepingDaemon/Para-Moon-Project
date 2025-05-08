@@ -6,12 +6,11 @@ namespace ParaMoon
     [Serializable]
     public class Item : IItem
     {
-        [SerializeField] ItemData _data;
-        [SerializeField] int _stackSize = 1;
-        [SerializeField] bool _canRotate = false;
+        ItemData _data;
+        int _stackCount;
 
         // For specialized slots - override the normal size
-        private Vector2Int? _forcedSize = null;
+        Vector2Int? _forcedSize = null;
 
         // IItem implementation
         public string ID => _data.ID;
@@ -19,28 +18,27 @@ namespace ParaMoon
         public string Description => _data.Description;
         public ItemType ItemType => _data.ItemType;
         public Sprite Icon => _data.Icon;
-        public Vector2Int Size
-        {
-            get
-            {
-                // Return forced size if it's set, otherwise use data size
-                return _forcedSize ?? new Vector2Int(_data.Width, _data.Height);
-            }
-        }
+        public Vector2Int Size => _forcedSize ?? _data.Size;
         public bool IsStackable => _data.IsStackable;
         public int MaxStackSize => _data.MaxStackSize;
-        public int CurrentStackSize
+        public int StackCount
         {
-            get => _stackSize;
-            set => _stackSize = Mathf.Clamp(value, 1, MaxStackSize);
+            get => _stackCount;
+            set => _stackCount = Mathf.Clamp(value, 1, MaxStackSize);
         }
-
         public ItemData Data => _data;
 
-        public Item(ItemData data, int stackSize = 1)
+        public Item(ItemData data, int stackCount = 1)
         {
             _data = data;
-            _stackSize = Mathf.Clamp(stackSize, 1, data.MaxStackSize);
+            _stackCount = Mathf.Clamp(stackCount, 1, data.MaxStackSize);
+        }
+
+        public Item(Item other)
+        {
+            _data = other._data;
+            _stackCount = other._stackCount;
+            _forcedSize = other._forcedSize;
         }
 
         // Method to force a different size for specialized slots
@@ -55,12 +53,41 @@ namespace ParaMoon
             _forcedSize = null;
         }
 
+        public bool TryAddToStack(int count)
+        {
+            if (!_data.IsStackable) 
+                return false;
+
+            int newTotal = _stackCount + count;
+            if (newTotal <= _data.MaxStackSize)
+            {
+                _stackCount = newTotal;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryRemoveFromStack(int count, out int removed)
+        {
+            removed = 0;
+
+            if (count <= 0) return false;
+
+            if (count >= _stackCount)
+            {
+                removed = _stackCount;
+                _stackCount = 0;
+                return true;
+            }
+
+            _stackCount -= count;
+            removed = count;
+            return true;
+        }
+
         public Item Clone()
         {
-            Item clone = new(_data, _stackSize);
-            clone._canRotate = _canRotate;
-
-            return clone;
+            return new(this);
         }
     }
 }

@@ -195,6 +195,16 @@ namespace ParaMoon
             }
         }
 
+        public T GetOrCreateService<T>() where T : class, new()
+        {
+            if (!TryGetService<T>(out var service))
+            {
+                service = new T();
+                RegisterService(service);
+            }
+            return service;
+        }
+
         /// <summary>
         /// Clears all registered services. Useful during scene transitions or application shutdown.
         /// </summary>

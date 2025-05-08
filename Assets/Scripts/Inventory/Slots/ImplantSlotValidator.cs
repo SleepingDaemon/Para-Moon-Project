@@ -2,29 +2,20 @@ using UnityEngine;
 
 namespace ParaMoon
 {
-    public class ImplantSlotValidator : ISlotValidator
+    public class ImplantSlotValidator : ItemTypeValidator
     {
-        readonly ImplantSlot _slotType;
+        private readonly ImplantSlot _slotType;
 
-        public ImplantSlotValidator(ImplantSlot slotType)
+        public ImplantSlotValidator(ImplantSlot slotType) : base(ItemType.Implant)
         {
             _slotType = slotType;
         }
 
-        public bool CanAcceptItem(IItem item, Vector2Int slotPosition)
+        public override bool CanAcceptItem(IItem item, Vector2Int position)
         {
-            // Check if the item is an implant item
-            if (item.ItemType != ItemType.Implant)
-                return false;
+            if (!base.CanAcceptItem(item, position)) return false;
 
-            // Get the implant-specific data
-            if (item.Data is ImplantItem implantItem)
-            {
-                // Check if the implant slot type matches
-                return implantItem.Slot == _slotType;
-            }
-
-            return false;
+            return item.Data is ImplantItem implantItem && implantItem.Slot == _slotType;
         }
     }
 }

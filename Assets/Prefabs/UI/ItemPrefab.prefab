@@ -221,7 +221,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5116041458580164971}
   - component: {fileID: 957744414909486596}
-  - component: {fileID: 58265087476988187}
+  - component: {fileID: 6406581530208078040}
   m_Layer: 5
   m_Name: ItemPrefab
   m_TagString: Untagged
@@ -266,7 +266,7 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &58265087476988187
+--- !u!114 &6406581530208078040
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -275,7 +275,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3665019607477871044}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9bbae1b2665d8394294f5525add73c2e, type: 3}
+  m_Script: {fileID: 11500000, guid: 756748908803a3f4ca1eab76b7c79c8c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _itemIcon: {fileID: 118308106730664185}

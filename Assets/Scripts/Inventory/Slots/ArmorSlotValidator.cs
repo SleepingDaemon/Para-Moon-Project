@@ -1,30 +1,23 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ParaMoon
 {
-    public class ArmorSlotValidator : ISlotValidator
+    public class ArmorSlotValidator : ItemTypeValidator
     {
         readonly ArmorSlot _slotType;
 
-        public ArmorSlotValidator(ArmorSlot slotType)
+        public ArmorSlotValidator(ArmorSlot slotType) : base(ItemType.Armor)
         {
             _slotType = slotType;
         }
 
-        public bool CanAcceptItem(IItem item, Vector2Int slotPosition)
+        public override bool CanAcceptItem(IItem item, Vector2Int slotPosition)
         {
-            // Check if the item is an equipment item
-            if (item.ItemType != ItemType.Armor)
+            if (!base.CanAcceptItem(item, slotPosition)) 
                 return false;
 
-            // Get the equipment-specific data
-            if (item.Data is ArmorItem armorItem)
-            {
-                // Check if the equipment slot type matches
-                return armorItem.Slot == _slotType;
-            }
-
-            return false;
+            return item.Data is ArmorItem armorItem && armorItem.Slot == _slotType;
         }
     }
 }

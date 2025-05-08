@@ -65,4 +65,10 @@ namespace ParaMoon
             return base.TryMoveItem(fromPosition, toPosition);
         }
     }
+
+    public enum EquipmentType
+    {
+        Armor,
+        Implant
+    }
 }

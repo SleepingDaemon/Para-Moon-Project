@@ -15,7 +15,7 @@ namespace ParaMoon
         [SerializeField] GameObject[] _coreServicePrefabs;
         [SerializeField] float _initializationTimeout = 10f;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             RegisterCoreServices();
             StartCoroutine(WaitForServicesInitialization());
@@ -33,8 +33,7 @@ namespace ParaMoon
 
                 // If the prefab is a ServiceBehaviour, it will self-register
                 // Otherwise we need to check if it's a service we should register manually
-                var serviceComponent = prefab.GetComponent<MonoBehaviour>();
-                if (serviceComponent == null)
+                if (!prefab.TryGetComponent<MonoBehaviour>(out var serviceComponent))
                 {
                     Debug.LogError($"[Bootstrapper] Prefab {prefab.name} does not have a service component.");
                     continue;
@@ -69,8 +68,7 @@ namespace ParaMoon
                     if (prefab == null)
                         continue;
 
-                    var serviceComponent = prefab.GetComponent<MonoBehaviour>();
-                    if (serviceComponent == null)
+                    if (!prefab.TryGetComponent<MonoBehaviour>(out var serviceComponent))
                         continue;
 
                     var serviceType = serviceComponent.GetType();
@@ -127,12 +125,30 @@ namespace ParaMoon
             if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
             {
                 Debug.Log("[Bootstrapper] Ensuring UIManager is initialized");
-                uiManager.Initialize();
+
+                if (uiManager == null)
+                {
+                    // Wait a frame to allow UI elements to register with ReferenceRegistry
+                    StartCoroutine(DelayedUIManagerInitialization(uiManager));
+                }
             }
             else
             {
                 Debug.LogError("[Bootstrapper] UIManager not available after initialization.");
             }
+        }
+
+        private IEnumerator DelayedUIManagerInitialization(UIManager uiManager)
+        {
+            // Wait for two frames to allow UI elements to register
+            yield return null;
+            yield return null;
+
+            // Now initialize the UI manager
+            uiManager.Initialize();
+
+            // Log confirmation
+            Debug.Log("[Bootstrapper] UIManager initialized after delay");
         }
     }
 }

@@ -8,17 +8,17 @@ namespace ParaMoon
     {
         [SerializeField] Image _background;
 
-        protected InventoryGridUI _parentInventory;
-
-        Vector2Int _gridPosition;
-        Color _normalColor = Color.white;
+        protected InventoryGridView _parentView;
+        protected Vector2Int _gridPosition;
+        protected Color _normalColor = Color.white;
 
         public Vector2Int GridPosition => _gridPosition;
+        public InventoryGridView ParentView => _parentView;
 
-        public virtual void Initialize(Vector2Int position, InventoryGridUI inventory)
+        public virtual void Initialize(Vector2Int position, InventoryGridView parentView)
         {
             _gridPosition = position;
-            _parentInventory = inventory;
+            _parentView = parentView;
 
             if (_background != null)
                 _normalColor = _background.color;
@@ -35,65 +35,64 @@ namespace ParaMoon
         public virtual void OnDrop(PointerEventData eventData)
         {
             // Get the dragged item
-            InventoryItemUI draggedItemUI = eventData.pointerDrag?.GetComponent<InventoryItemUI>();
+            InventoryItemView draggedItemUI = eventData.pointerDrag?.GetComponent<InventoryItemView>();
             if (draggedItemUI == null)
                 return;
 
             // If from a different inventory, handle as a transfer
-            InventoryGridUI sourceInventory = draggedItemUI.ParentInventory;
-            if (sourceInventory == null)
+            InventoryGridView sourceGridView = draggedItemUI.ParentView;
+            if (sourceGridView == null)
             {
                 Debug.LogError($"Source inventory is null for item {draggedItemUI.gameObject.name}");
                 return;
             }
 
-            if (_parentInventory == null)
+            if (_parentView == null)
             {
                 Debug.LogError($"Parent inventory is null for slot {gameObject.name}");
                 return;
             }
 
-            if (sourceInventory != _parentInventory)
+            if (sourceGridView != _parentView)
             {
+                InventoryService inventoryService = InventoryService.Instance;
+
                 // Get the item's data
                 IItem itemToTransfer = draggedItemUI.Item;
                 Vector2Int sourcePosition = draggedItemUI.GridPosition;
 
-                // Check if the source inventory is a specialized inventory
-                bool sourceIsSpecialized = sourceInventory.UseSpecializedSlots;
-                bool targetIsSpecialized = _parentInventory.UseSpecializedSlots;
-
-                // If moving from specialized to regular
-                if (sourceIsSpecialized && !targetIsSpecialized)
+                // Handle specialized inventory transfers
+                // Handle specialized transfers
+                if (sourceGridView is SpecializedInventoryView)
                 {
-                    // Use specialized transfer method that handles size restoration
-                    bool success = InventoryHelper.TransferFromSpecializedSlot(
-                        sourceInventory.Inventory,
-                        _parentInventory.Inventory,
+                    bool success = inventoryService.TransferFromSpecializedSlot(
+                        sourceGridView.Inventory,
+                        _parentView.Inventory,
                         itemToTransfer,
                         sourcePosition);
 
-                    // If transfer was unsuccessful, return to original position
                     if (!success)
                     {
-                        sourceInventory.CancelItemDrag();
+                        // Reset position if transfer failed
+                        draggedItemUI.ResetPosition();
                     }
-                    return;
                 }
-
-                // Regular transfer for other cases
-                bool regularSuccess = InventoryHelper.TransferItem(
-                    sourceInventory.Inventory,
-                    _parentInventory.Inventory,
-                    itemToTransfer);
-
-                // If transfer was unsuccessful, return to original position
-                if (!regularSuccess)
+                else
                 {
-                    sourceInventory.CancelItemDrag();
+                    // Regular transfer
+                    bool success = inventoryService.TransferItem(
+                        sourceGridView.Inventory,
+                        _parentView.Inventory,
+                        itemToTransfer);
+
+                    if (!success)
+                    {
+                        // Reset position if transfer failed
+                        draggedItemUI.ResetPosition();
+                    }
                 }
             }
-            // If from the same inventory, the inventory's EndItemDrag will handle it
+            // If from same inventory, the inventory's EndItemDrag will handle movement
         }
 
         public void OnPointerEnter(PointerEventData eventData)

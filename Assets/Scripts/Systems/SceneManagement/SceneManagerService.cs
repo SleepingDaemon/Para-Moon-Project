@@ -61,6 +61,7 @@ namespace ParaMoon
         }
     }
 
+    [Injectable]
     public class SceneManagerService : ServiceBehaviour<SceneManagerService>
     {
         [Header("Scene Names")]
@@ -86,6 +87,50 @@ namespace ParaMoon
         public event Action<string> OnSceneUnloadStarted;
         public event Action<string> OnSceneUnloadCompleted;
         public event Action<float> OnSceneLoadProgressUpdated;
+
+        public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Your existing code...
+
+            // Add CrossSceneProcessor to all root objects in the newly loaded scene
+            if (ServiceLocator.Instance.TryGetService<SceneDependencyManager>(out _))
+            {
+                var rootObjects = scene.GetRootGameObjects();
+                foreach (var rootObject in rootObjects)
+                {
+                    if (rootObject.GetComponent<SceneDependencyProcessor>() == null)
+                    {
+                        rootObject.AddComponent<SceneDependencyProcessor>();
+                    }
+                }
+
+                Debug.Log($"[SceneManagerService] Added CrossSceneProcessors to {scene.name} scene objects");
+            }
+        }
+
+        private void OnSceneUnloading(Scene scene)
+        {
+            // Clean up cross-scene references for this scene
+            if (ServiceLocator.Instance.TryGetService<SceneDependencyManager>(out var manager))
+            {
+                manager.UnregisterScene(scene.name);
+                Debug.Log($"[SceneManagerService] Unregistered cross-scene references for scene '{scene.name}'");
+            }
+        }
+
+        // Add this to OnEnable
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloading;
+        }
+
+        // Add this to OnDisable
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloading;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void EnsureBootScene()
