@@ -138,6 +138,16 @@ namespace ParaMoon
             }
         }
 
+        public Camera GetMainCamera()
+        {
+            return _mainCamera;
+        }
+
+        public Camera GetUICamera()
+        {
+            return _uiCamera;
+        }
+
         /// <summary>
         /// Static helper to set camera depth based on tag
         /// </summary>

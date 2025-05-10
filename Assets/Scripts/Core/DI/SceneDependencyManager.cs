@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ParaMoon
 {
-
+    [Injectable]
     public class SceneDependencyManager : ServiceBehaviour<SceneDependencyManager>
     {
         [SerializeField] private bool _debugMode = false;

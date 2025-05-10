@@ -2,6 +2,9 @@
 
 namespace ParaMoon
 {
+    /// <summary>
+    /// Marks a field or property for dependency injection.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false)]
     public class InjectAttribute : Attribute
     {

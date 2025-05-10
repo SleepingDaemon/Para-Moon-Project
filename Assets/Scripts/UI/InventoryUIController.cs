@@ -2,9 +2,8 @@ using UnityEngine;
 
 namespace ParaMoon
 {
-    [Injectable]
-    [SceneExported("InventoryUI")]
-    public class InventoryUIController : ServiceBehaviour<InventoryUIController>
+    [SceneExported("GameUI")]
+    public class InventoryUIController : MonoBehaviour
     {
         [SerializeField] private InventoryGridView _playerInventoryView;
         [SerializeField] private InventoryGridView _containerInventoryView;
@@ -18,9 +17,14 @@ namespace ParaMoon
         InventoryService _inventoryService;
         EquipmentService _equipmentService;
 
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
+            ServiceLocator.Instance.WhenAvailable<UIManager>(ui =>
+            {
+                _uiManager = ui;
+                _uiManager.SetInventoryUIController(this);
+                Debug.Log("[InventoryUIController] Registered with UIManager");
+            });
 
             _inventoryService = InventoryService.Instance;
             if (_containerWindow != null)
@@ -40,21 +44,33 @@ namespace ParaMoon
                 _armorInventoryView.Initialize(_equipmentService.GetArmorInventory());
             }
 
-            _uiManager.SetInventoryUIController(this);
+            ServiceLocator.Instance.WhenAvailable<UIManager>(ui =>
+            {
+                _uiManager = ui;
+                _uiManager.SetInventoryUIController(this);
+            });
         }
 
         /// <summary>
         /// Open a container inventory UI
         /// </summary>
-        public void OpenContainerUI(IInventory containerInventory, string containerName)
+        public void OpenContainerUI(IInventory containerInventory)
         {
             _containerInventoryView.Initialize(containerInventory);
 
-            if (_containerTitle != null)
-                _containerTitle.text = containerName;
+            MenuManager menuManager = GameObject.FindFirstObjectByType<MenuManager>();
+            if (menuManager != null && !_playerInventoryView.gameObject.activeSelf)
+                menuManager.ToggleWindowByReference(_playerInventoryView.gameObject, true, true);
 
-            if (_containerWindow != null)
-                _containerWindow.SetActive(true);
+            //if (_containerTitle != null)
+            //    _containerTitle.text = containerName;
+
+            // Show the container window
+            if (_containerInventoryView != null)
+            {
+                _containerInventoryView.gameObject.SetActive(true);
+                _containerInventoryView.gameObject.transform.SetAsLastSibling();
+            }
         }
 
         /// <summary>
@@ -66,6 +82,11 @@ namespace ParaMoon
                 _containerWindow.SetActive(false);
 
             _containerInventoryView.Initialize(null);
+        }
+
+        public GameObject GetContainerWindow()
+        {
+            return _containerWindow;
         }
 
         /// <summary>

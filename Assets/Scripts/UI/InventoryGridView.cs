@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace ParaMoon
 {
-    [Injectable]
     [SceneExported("InventoryUIController")]
     public class InventoryGridView : MonoBehaviour
     {
@@ -86,8 +85,6 @@ namespace ParaMoon
 
         protected virtual void CreateSlot(Vector2Int gridPosition)
         {
-            Debug.Log($"Creating slot at position: {gridPosition}");
-
             GameObject slotObj = Instantiate(_slotPrefab, _gridContainer);
             InventorySlotUI slotUI = slotObj.GetComponent<InventorySlotUI>();
 

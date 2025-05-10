@@ -218,7 +218,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1712610895176147347, guid: b7f92f728d5d3d9429b0bf28f7b33684, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4647536595094209092}
   m_SourcePrefab: {fileID: 100100000, guid: b7f92f728d5d3d9429b0bf28f7b33684, type: 3}
 --- !u!1 &133840515
 GameObject:
@@ -265,6 +268,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &631511984 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1712610895176147347, guid: b7f92f728d5d3d9429b0bf28f7b33684, type: 3}
+  m_PrefabInstance: {fileID: 43989347}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &697845189
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -816,14 +824,6 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1612891657938960035, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1612891657938960035, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1900627625068932047, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1068,10 +1068,6 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5508201065210210498, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
-      propertyPath: _identifier
-      value: EROSPanel
-      objectReference: {fileID: 0}
     - target: {fileID: 5519925828776081736, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1296,8 +1292,7 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 5508201065210210498, guid: 360acfe7e0cdb924c9359ba24b087dcc, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -1813,6 +1808,38 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6031244461685548228, guid: b7f92f728d5d3d9429b0bf28f7b33684, type: 3}
   m_PrefabInstance: {fileID: 43989347}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4647536595094209092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 631511984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e285738e5a2f9b14893fa888434e47f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dontDestroyOnLoad: 1
+  _autoInitialize: 1
+  _uiCanvas: {fileID: 2925887480025119360}
+  _highlightContainer: {fileID: 4647536595094209091}
+  _outlinePrefab: {fileID: 971760442710702532}
+  _fillPrefab: {fileID: 6270604383970130122, guid: 9ddbabd14b5131e4a8c189284383760e, type: 3}
+  _nameTextPrefab: {fileID: 2260553964432331003}
+  _dataRowPrefab: {fileID: 3820367893059242663, guid: 13e04708a4209ab40a29ac71426fa15c, type: 3}
+  _outlineThickness: 2
+  _nameVerticalOffset: 10
+  _dataRowSpacing: 20
+  _minHighlightSize: 50
+  _maxDistanceToHighlight: 20
+  _showBackgroundFill: 0
+  _fillColor: {r: 0.1, g: 0.1, b: 0.1, a: 0.5}
+  _highlightUpdateFrequency: 1
+  _itemColor: {r: 0.39711642, g: 0.8679245, b: 0.77874327, a: 1}
+  _npcColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  _enemyColor: {r: 1, g: 0.3066038, b: 0.3066038, a: 1}
+  _defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
 --- !u!1 &4824948381098797134
 GameObject:
   m_ObjectHideFlags: 0
@@ -1956,36 +1983,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &7767504160350768394
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8003810971144635293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e285738e5a2f9b14893fa888434e47f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _uiCanvas: {fileID: 2925887480025119360}
-  _highlightContainer: {fileID: 4647536595094209091}
-  _outlinePrefab: {fileID: 971760442710702532}
-  _fillPrefab: {fileID: 6270604383970130122, guid: 9ddbabd14b5131e4a8c189284383760e, type: 3}
-  _nameTextPrefab: {fileID: 2260553964432331003}
-  _dataRowPrefab: {fileID: 3820367893059242663, guid: 13e04708a4209ab40a29ac71426fa15c, type: 3}
-  _outlineThickness: 2
-  _nameVerticalOffset: 10
-  _dataRowSpacing: 20
-  _minHighlightSize: 50
-  _maxDistanceToHighlight: 20
-  _showBackgroundFill: 0
-  _fillColor: {r: 0.1, g: 0.1, b: 0.1, a: 0.5}
-  _highlightUpdateFrequency: 1
-  _itemColor: {r: 0.39711642, g: 0.8679245, b: 0.77874327, a: 1}
-  _npcColor: {r: 0.2, g: 0.6, b: 1, a: 1}
-  _enemyColor: {r: 1, g: 0.3066038, b: 0.3066038, a: 1}
-  _defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
 --- !u!1 &8003810971144635293
 GameObject:
   m_ObjectHideFlags: 0
@@ -1996,7 +1993,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5466151948839946233}
   - component: {fileID: 2925887480025119360}
-  - component: {fileID: 7767504160350768394}
   m_Layer: 5
   m_Name: PersistentLayer
   m_TagString: Untagged

@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace ParaMoon
 {
+    [Injectable]
     public class SceneManagerServiceDI : SceneManagerService
     {
         [SerializeField] private bool _enableCrossSceneReferences = true;

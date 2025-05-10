@@ -185,6 +185,16 @@ namespace ParaMoon
         /// <returns>The created instance with dependencies injected.</returns>
         public static T Create<T>() where T : class, new()
         {
+            Type type = typeof(T);
+
+            // Check if we're trying to create a MonoBehaviour
+            if (typeof(MonoBehaviour).IsAssignableFrom(type))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot create MonoBehaviour of type {type.Name} using 'new'. " +
+                    $"MonoBehaviours must be created via GameObject.AddComponent() or instantiated from prefabs.");
+            }
+
             var instance = new T();
             InjectInto(instance);
             return instance;

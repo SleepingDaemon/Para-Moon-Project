@@ -46,6 +46,13 @@ namespace ParaMoon
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            if (!scene.isLoaded)
+            {
+                if (_logInjectionActivity)
+                    Debug.LogWarning($"[SceneAwareInjector] Scene '{scene.name}' is marked as not loaded. Skipping injection.");
+                return;
+            }
+
             if (_logInjectionActivity)
                 Debug.Log($"[SceneAwareInjector] Scene '{scene.name}' loaded with mode: {mode}. Injecting dependencies...");
 
@@ -59,23 +66,31 @@ namespace ParaMoon
             int injectableCount = 0;
 
             // First pass: add injectors to all objects with [Injectable] components
-            foreach (var rootObject in rootObjects)
+            for (int i = 0; i < rootObjects.Length; i++)
             {
-                injectableCount += AddInjectorsRecursively(rootObject);
+                GameObject rootObject = rootObjects[i];
+                if (rootObject != null)  // Add null check
+                {
+                    injectableCount += AddInjectorsRecursively(rootObject);
 
-                // Yield occasionally to avoid freezing for large scenes
-                if (injectableCount % 10 == 0)
-                    yield return null;
+                    // Yield occasionally to avoid freezing for large scenes
+                    if (injectableCount % 10 == 0)
+                        yield return null;
+                }
             }
 
             // Let the scene finish initializing
             yield return new WaitForEndOfFrame();
 
             // Second pass: inject dependencies
-            foreach (var rootObject in rootObjects)
+            for (int i = 0; i < rootObjects.Length; i++)
             {
-                InjectDependenciesRecursively(rootObject);
-                yield return null;
+                GameObject rootObject = rootObjects[i];
+                if (rootObject != null)  // Add null check
+                {
+                    InjectDependenciesRecursively(rootObject);
+                    yield return null;
+                }
             }
 
             if (_logInjectionActivity)
@@ -93,35 +108,50 @@ namespace ParaMoon
 
         private int AddInjectorsRecursively(GameObject gameObject)
         {
+            if (gameObject == null)
+                return 0;
+
             int count = 0;
 
-            // Check components on this GameObject
-            var components = gameObject.GetComponents<MonoBehaviour>();
-            bool needsInjector = false;
-
-            foreach (var component in components)
+            try
             {
-                if (component == null) continue;
+                // Check components on this GameObject
+                var components = gameObject.GetComponents<MonoBehaviour>();
+                bool needsInjector = false;
 
-                var type = component.GetType();
-                if (System.Attribute.IsDefined(type, typeof(InjectableAttribute)))
+                foreach (var component in components)
                 {
-                    needsInjector = true;
-                    count++;
-                    break;
+                    if (component == null) continue;
+
+                    var type = component.GetType();
+                    if (System.Attribute.IsDefined(type, typeof(InjectableAttribute)))
+                    {
+                        needsInjector = true;
+                        count++;
+                        break;
+                    }
+                }
+
+                // Add injector if needed
+                if (needsInjector && gameObject != null && gameObject.GetComponent<MonoBehaviourInjector>() == null)
+                {
+                    gameObject.AddComponent<MonoBehaviourInjector>();
+                }
+
+                // Process children - with safety check
+                if (gameObject != null && gameObject.transform != null)
+                {
+                    foreach (Transform child in gameObject.transform)
+                    {
+                        if (child != null)
+                            count += AddInjectorsRecursively(child.gameObject);
+                    }
                 }
             }
-
-            // Add injector if needed
-            if (needsInjector && gameObject.GetComponent<MonoBehaviourInjector>() == null)
+            catch (System.Exception e)
             {
-                gameObject.AddComponent<MonoBehaviourInjector>();
-            }
-
-            // Process children
-            foreach (Transform child in gameObject.transform)
-            {
-                count += AddInjectorsRecursively(child.gameObject);
+                // Log the error but don't let it crash the entire process
+                Debug.LogError($"[SceneAwareInjector] Error processing GameObject: {e.Message}");
             }
 
             return count;
@@ -129,17 +159,32 @@ namespace ParaMoon
 
         private void InjectDependenciesRecursively(GameObject gameObject)
         {
-            // Perform injection if this object has an injector
-            var injector = gameObject.GetComponent<MonoBehaviourInjector>();
-            if (injector != null)
-            {
-                injector.InjectAll();
-            }
+            // Add null check at the beginning
+            if (gameObject == null)
+                return;
 
-            // Process children
-            foreach (Transform child in gameObject.transform)
+            try
             {
-                InjectDependenciesRecursively(child.gameObject);
+                // Perform injection if this object has an injector
+                var injector = gameObject.GetComponent<MonoBehaviourInjector>();
+                if (injector != null)
+                {
+                    injector.InjectAll();
+                }
+
+                // Process children - with safety check
+                if (gameObject != null && gameObject.transform != null)
+                {
+                    foreach (Transform child in gameObject.transform)
+                    {
+                        if (child != null)
+                            InjectDependenciesRecursively(child.gameObject);
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[SceneAwareInjector] Error injecting dependencies: {e.Message}");
             }
         }
     }

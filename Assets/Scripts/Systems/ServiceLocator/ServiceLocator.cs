@@ -216,4 +216,40 @@ namespace ParaMoon
             Debug.Log("[ServiceLocator] All services cleared");
         }
     }
+
+    public static class DI
+    {
+        public static T Get<T>() where T : class
+        {
+            // First check ServiceLocator
+            if (ServiceLocator.Instance.TryGetService<T>(out var service))
+                return service;
+
+            // Service not found
+            Debug.LogWarning($"[DI] Service of type {typeof(T).Name} not found!");
+            return null;
+        }
+
+        // For optional dependencies - returns null without warning
+        public static T GetOptional<T>() where T : class
+        {
+            if (ServiceLocator.Instance.TryGetService<T>(out var service))
+                return service;
+
+            return null;
+        }
+
+        // For async dependencies (once and forget)
+        public static void WhenAvailable<T>(Action<T> callback) where T : class
+        {
+            ServiceLocator.Instance.WhenAvailable<T>(callback.Invoke);
+        }
+
+        // For adding MonoBehaviourInjector to GameObject
+        public static void Process(GameObject gameObject)
+        {
+            if (gameObject.GetComponent<MonoBehaviourInjector>() == null)
+                gameObject.AddComponent<MonoBehaviourInjector>();
+        }
+    }
 }

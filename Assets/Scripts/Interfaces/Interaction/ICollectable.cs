@@ -22,5 +22,6 @@
     public interface IContainer : IInteractable
     {
         void Open(IInteractor interactor);
+        void Close(IInteractor interactor);
     }
 }

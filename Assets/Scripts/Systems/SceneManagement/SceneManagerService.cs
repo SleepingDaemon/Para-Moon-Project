@@ -73,6 +73,10 @@ namespace ParaMoon
         [SerializeField] SceneTransitionSettings _defaultTransition = new();
         [SerializeField] LoadingScreenSettings _defaultLoadingScreen = new();
 
+        // Inject dependencies
+        [Inject] private UIManager _uiManager;
+        [Inject] private SceneDependencyManager _sceneDependencyManager;
+
         Dictionary<string, bool> _loadedScenes = new();
         Dictionary<string, List<string>> _sceneDependencies = new();
         private HashSet<string> _persistentScenes = new();
@@ -90,10 +94,8 @@ namespace ParaMoon
 
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            // Your existing code...
-
             // Add CrossSceneProcessor to all root objects in the newly loaded scene
-            if (ServiceLocator.Instance.TryGetService<SceneDependencyManager>(out _))
+            if (_sceneDependencyManager != null)
             {
                 var rootObjects = scene.GetRootGameObjects();
                 foreach (var rootObject in rootObjects)
@@ -108,32 +110,32 @@ namespace ParaMoon
             }
         }
 
-        private void OnSceneUnloading(Scene scene)
+        protected void OnSceneUnloading(Scene scene)
         {
             // Clean up cross-scene references for this scene
-            if (ServiceLocator.Instance.TryGetService<SceneDependencyManager>(out var manager))
+            if (_sceneDependencyManager != null)
             {
-                manager.UnregisterScene(scene.name);
+                _sceneDependencyManager.UnregisterScene(scene.name);
                 Debug.Log($"[SceneManagerService] Unregistered cross-scene references for scene '{scene.name}'");
             }
         }
 
         // Add this to OnEnable
-        private void OnEnable()
+        protected void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloading;
         }
 
         // Add this to OnDisable
-        private void OnDisable()
+        protected void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloading;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void EnsureBootScene()
+        protected static void EnsureBootScene()
         {
             // Store the current active scene name before making any changes
             _initialSceneName = SceneManager.GetActiveScene().name;
@@ -251,7 +253,7 @@ namespace ParaMoon
             LoadScene(sceneName, LoadSceneMode.Single, _defaultTransition, _defaultLoadingScreen.Type, onComplete);
         }
 
-        private void LoadScene(string sceneName, LoadSceneMode mode, SceneTransitionSettings transition,
+        protected void LoadScene(string sceneName, LoadSceneMode mode, SceneTransitionSettings transition,
                               LoadingScreenType loadingScreenType, Action onComplete = null)
         {
             if (string.IsNullOrEmpty(sceneName))
@@ -300,7 +302,7 @@ namespace ParaMoon
             }
         }
 
-        private IEnumerator ProcessOperationQueue()
+        protected IEnumerator ProcessOperationQueue()
         {
             _isProcessingQueue = true;
 
@@ -314,7 +316,7 @@ namespace ParaMoon
             _isProcessingQueue = false;
         }
 
-        private IEnumerator LoadSceneRoutine(string sceneName, LoadSceneMode mode,
+        protected IEnumerator LoadSceneRoutine(string sceneName, LoadSceneMode mode,
                                             SceneTransitionSettings transition,
                                             LoadingScreenType loadingScreenType,
                                             Action onComplete)
@@ -380,8 +382,8 @@ namespace ParaMoon
             }
 
             // Set final progress
-            if (ServiceLocator.Instance.TryGetService<UIManager>(out var ui))
-                ui.UpdateLoadingProgress(1f);
+            if (_uiManager != null)
+                _uiManager.UpdateLoadingProgress(1f);
 
             // Allow scene activation
             loadOperation.allowSceneActivation = true;
@@ -420,7 +422,7 @@ namespace ParaMoon
             _isProcessingOperation = false;
         }
 
-        private IEnumerator UnloadSceneRoutine(string sceneName, Action onComplete)
+        protected IEnumerator UnloadSceneRoutine(string sceneName, Action onComplete)
         {
             _isProcessingOperation = true;
 
@@ -471,12 +473,12 @@ namespace ParaMoon
             _isProcessingOperation = false;
         }
 
-        private IEnumerator PerformTransitionIn(SceneTransitionSettings transition)
+        protected IEnumerator PerformTransitionIn(SceneTransitionSettings transition)
         {
             // Implementation would handle UI transitions in
-            if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
+            if (_uiManager != null)
             {
-                yield return StartCoroutine(uiManager.ShowTransition(transition.Duration));
+                yield return StartCoroutine(_uiManager.ShowTransition(transition.Duration));
                 Debug.Log($"[SceneManagerService] Transition In: {transition.Type}");
             }
             else
@@ -486,12 +488,12 @@ namespace ParaMoon
             }
         }
 
-        private IEnumerator PerformTransitionOut(SceneTransitionSettings transition)
+        protected IEnumerator PerformTransitionOut(SceneTransitionSettings transition)
         {
             // Implementation would handle UI transitions out
-            if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
+            if (_uiManager != null)
             {
-                yield return StartCoroutine(uiManager.HideTransition(transition.Duration));
+                yield return StartCoroutine(_uiManager.HideTransition(transition.Duration));
                 Debug.Log($"[SceneManagerService] Transition Out: {transition.Type}");
             }
             else
@@ -501,7 +503,7 @@ namespace ParaMoon
             }
         }
 
-        private IEnumerator ShowLoadingScreen(LoadingScreenSettings settings)
+        protected IEnumerator ShowLoadingScreen(LoadingScreenSettings settings)
         {
             Debug.Log("[SceneManagerService] Showing loading screen");
 
@@ -511,9 +513,9 @@ namespace ParaMoon
                 AsyncOperation loadingScreenOp = SceneManager.LoadSceneAsync(settings.LoadingSceneName, LoadSceneMode.Additive);
                 yield return loadingScreenOp;
             }
-            else if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
+            else if (_uiManager != null)
             {
-                var loadingScreenController = uiManager.GetLoadingScreenController();
+                var loadingScreenController = _uiManager.GetLoadingScreenController();
                 if (loadingScreenController != null)
                 {
                     // Ensure the GameObject is active
@@ -529,7 +531,7 @@ namespace ParaMoon
             }
         }
 
-        private IEnumerator HideLoadingScreen()
+        protected IEnumerator HideLoadingScreen()
         {
             Debug.Log("[SceneManagerService] Hiding loading screen");
 

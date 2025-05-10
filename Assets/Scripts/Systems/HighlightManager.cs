@@ -13,7 +13,8 @@ namespace ParaMoon
      * - Attach this script to a GameObject in the scene.
      * - Assign the UI elements and settings in the inspector.
      */
-    public class HighlightManager : MonoBehaviour
+    [Injectable]
+    public class HighlightManager : ServiceBehaviour<HighlightManager>
     {
         static HighlightManager _instance;
         public static HighlightManager Instance => _instance;
@@ -56,7 +57,7 @@ namespace ParaMoon
 
         #region Unity Methods
 
-        private void Awake()
+        protected override void Awake()
         {
             _outlineImage = _outlinePrefab.GetComponent<Image>();
             _nameText = _nameTextPrefab.GetComponent<TextMeshProUGUI>();

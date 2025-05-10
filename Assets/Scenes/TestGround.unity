@@ -2328,7 +2328,7 @@ MonoBehaviour:
   _item: {fileID: 11400000, guid: df8ca68901d126945af2a9209e4a6af2, type: 2}
   _quantity: 1
   _interactionData:
-    PromptText: Pick Up
+    PromptText: 
     PromptIcon: {fileID: 0}
     InteractionDistance: 2.5
     InteractionSound: 
@@ -2676,7 +2676,6 @@ GameObject:
   - component: {fileID: 217507140}
   - component: {fileID: 217507139}
   - component: {fileID: 217507138}
-  - component: {fileID: 217507141}
   - component: {fileID: 217507142}
   m_Layer: 9
   m_Name: Cube
@@ -2774,29 +2773,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 217507136}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &217507141
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217507136}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46a679b10a128a94f80f3b1f9eb44977, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _displayName: Storage
-  _highlightColor: {r: 0, g: 0, b: 0, a: 0}
-  _highlightType: 5
-  _useAllRenderers: 1
-  _customRenderers: []
-  _interactionData:
-    PromptText: 
-    PromptIcon: {fileID: 0}
-    InteractionDistance: 2.5
-    InteractionSound: 
-    Type: 2
 --- !u!114 &217507142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2809,8 +2785,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c7093f455caa3b4e979d48d622b7f6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _displayName: Kalante's Stash
+  _highlightColor: {r: 0, g: 0, b: 0, a: 0}
+  _highlightType: 5
+  _useAllRenderers: 1
+  _customRenderers: []
   _inventoryData: {fileID: 11400000, guid: 2138605e985d72d479ddf7641f83a574, type: 2}
-  _type: 4
+  _interactionData:
+    PromptText: 
+    PromptIcon: {fileID: 0}
+    InteractionDistance: 2.5
+    InteractionSound: 
+    Type: 2
 --- !u!43 &239939796
 Mesh:
   m_ObjectHideFlags: 0
@@ -4134,6 +4120,7 @@ GameObject:
   - component: {fileID: 338817749}
   - component: {fileID: 338817748}
   - component: {fileID: 338817753}
+  - component: {fileID: 338817755}
   m_Layer: 10
   m_Name: Player
   m_TagString: Untagged
@@ -4390,6 +4377,21 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bc456d89176a40a47ae254d3d184c1eb, type: 2}
   - {fileID: 11400000, guid: baacfca8b53e5df4d893f7b2f15e4363, type: 2}
   - {fileID: 11400000, guid: dfe8e0b344d0f7243b34cc1c22ee2b2c, type: 2}
+--- !u!114 &338817755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 338817740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84713eb1fa949ab4f83db7f9c0a6a63a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _injectOnAwake: 1
+  _injectOnEnable: 0
+  _additionalTargets: []
 --- !u!43 &346544914
 Mesh:
   m_ObjectHideFlags: 0
@@ -15045,7 +15047,7 @@ MonoBehaviour:
   _item: {fileID: 11400000, guid: baacfca8b53e5df4d893f7b2f15e4363, type: 2}
   _quantity: 1
   _interactionData:
-    PromptText: Pick Up
+    PromptText: 
     PromptIcon: {fileID: 0}
     InteractionDistance: 2.5
     InteractionSound: 

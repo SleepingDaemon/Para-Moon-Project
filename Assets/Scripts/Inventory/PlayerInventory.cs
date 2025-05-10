@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace ParaMoon
 {
-    [Injectable]
     public class PlayerInventory : MonoBehaviour, IInventoryProvider
     {
         [Header("Inventory Configuration")]
@@ -14,8 +14,7 @@ namespace ParaMoon
         [SerializeField] private bool _addTestItems;
         [SerializeField] private ItemData[] _testItems;
 
-        [Inject] UIManager _uiManager;
-        [SceneReference("InventoryUI", "GameUI")] InventoryUIController _inventoryUIController;
+        InventoryUIController _inventoryUIController;
         IInventory _inventory;
         EquipmentService _equipmentService;
 
@@ -24,6 +23,11 @@ namespace ParaMoon
         public IInventory ArmorInventory => _equipmentService?.GetArmorInventory();
         public IInventory ImplantInventory => _equipmentService?.GetImplantInventory();
         public EquipmentService Equipment => _equipmentService;
+
+        private void Awake()
+        {
+            DI.Process(gameObject);
+        }
 
         private void Start()
         {
@@ -79,8 +83,20 @@ namespace ParaMoon
         /// </summary>
         private void ConnectToUIController()
         {
-            _inventoryUIController = _uiManager.GetInventoryUIController();
-            _inventoryUIController.Initialize(_inventory, _equipmentService);
+            DI.WhenAvailable<UIManager>(ui =>
+            {
+                _inventoryUIController = ui.GetInventoryUIController();
+
+                if (_inventoryUIController != null)
+                {
+                    _inventoryUIController.Initialize(_inventory, _equipmentService);
+                    Debug.Log("[PlayerInventory] Connected to InventoryUIController via WhenAvailable");
+                }
+                else
+                {
+                    Debug.LogWarning("[PlayerInventory] Inventory UI Controller not available in UIManager!");
+                }
+            });
         }
 
         /// <summary>
@@ -179,9 +195,9 @@ namespace ParaMoon
             if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
             {
                 if (uiManager.CurrentState == UIManager.UIState.Gameplay)
-                    uiManager.ToggleMenuLayer();
+                    uiManager.ToggleEROSMenu();
                 else if (uiManager.CurrentState == UIManager.UIState.EROSMenu)
-                    uiManager.ToggleMenuLayer();
+                    uiManager.ToggleEROSMenu();
             }
         }
     }

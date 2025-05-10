@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ParaMoon
 {
@@ -26,6 +25,8 @@ namespace ParaMoon
 
         [SerializeField] ReticleUIController _reticleUIController;
 
+        [Inject] UIManager _uiManager;
+        [Inject] InputManager _inputManager;
         InteractionUIController _interactionUIController;
         InteractionDetector _detector;
 
@@ -34,20 +35,40 @@ namespace ParaMoon
 
         #region Unity Methods
 
+        private void Awake()
+        {
+            //if (gameObject.GetComponent<MonoBehaviourInjector>() == null)
+            //{
+            //    gameObject.AddComponent<MonoBehaviourInjector>();
+            //}
+
+            ServiceLocator.Instance.WhenAvailable<UIManager>(ui =>
+            {
+                _uiManager = ui;
+            });
+
+            ServiceLocator.Instance.WhenAvailable<InputManager>(input =>
+            {
+                _inputManager = input;
+            });
+        }
+
         private void Start()
         {
+            if (_uiManager == null)
+            {
+                Debug.LogError("[PlayerInteractor] UIManager is not available.");
+                return;
+            }
+
+            // Get InteractionUIController if we don't have it yet
             if (_interactionUIController == null)
             {
-                if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
+                _interactionUIController = _uiManager.GetInteractionUIController();
+                if (_interactionUIController == null)
                 {
-                    _interactionUIController = uiManager.GetInteractionUIController();
-                }
-                else
-                {
-                    ServiceLocator.Instance.WhenAvailable<UIManager>(uiManager =>
-                    {
-                        _interactionUIController = uiManager.GetInteractionUIController();
-                    });
+                    Debug.LogError("[PlayerInteractor] InteractionUIController not found in UIManager.");
+                    return;
                 }
             }
 
@@ -56,8 +77,11 @@ namespace ParaMoon
 
         private void Update()
         {
-            if (_interactionUIController == null)
+            // Check that we have all dependencies before proceeding
+            if (_interactionUIController == null || _inputManager == null || _detector == null)
+            {
                 return;
+            }
 
             IInteractable interactable = _detector.GetInteractableInView();
 
@@ -66,8 +90,7 @@ namespace ParaMoon
             {
                 _interactionUIController.ShowInteractionPrompt(interactable.GetInteractionData());
 
-                if (ServiceLocator.Instance.TryGetService<InputManager>(out var inputManager) &&
-                    inputManager.Interact)
+                if (_inputManager.Interact)
                 {
                     InteractionData data = interactable.GetInteractionData();
                     Debug.LogFormat("<color=green>[INTERACTION]</color> Interacting with: {0} (Type: {1})",

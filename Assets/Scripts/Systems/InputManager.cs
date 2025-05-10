@@ -11,6 +11,8 @@ namespace ParaMoon
     [SceneExported("InputManager")]
     public class InputManager : ServiceBehaviour<InputManager>
     {
+        public event Action OnMenuToggleRequested;
+
         [Header("Input Settings")]
         [SerializeField] InputActionAsset _playerControls;
 
@@ -112,22 +114,15 @@ namespace ParaMoon
             };
             _interactAction.canceled += ctx => Interact = false;
 
+            // Simplified menu toggle handling
             if (_playerEROSAction != null)
             {
-                _playerEROSAction.performed += ctx =>
-                {
-                    ToggleUIMode();
-                    OnToggleMenu?.Invoke();
-                };
+                _playerEROSAction.performed += ctx => OnMenuToggleRequested?.Invoke();
             }
 
             if (_uiEROSAction != null)
             {
-                _uiEROSAction.performed += ctx =>
-                {
-                    ToggleUIMode();
-                    OnToggleMenu?.Invoke();
-                };
+                _uiEROSAction.performed += ctx => OnMenuToggleRequested?.Invoke();
             }
         }
 
@@ -141,6 +136,17 @@ namespace ParaMoon
             if (IsUIMode)
                 EnableUIActionMap();
             else
+                EnablePlayerActionMap();
+        }
+
+        /// <summary>
+        /// Switches input mode based on the target UI state
+        /// </summary>
+        public void SetInputMode(bool uiMode)
+        {
+            if (uiMode && !IsUIMode)
+                EnableUIActionMap();
+            else if (!uiMode && IsUIMode)
                 EnablePlayerActionMap();
         }
 

@@ -12,6 +12,15 @@ namespace ParaMoon
 
         InteractionData _lastData;
 
+        private void Awake()
+        {
+            ServiceLocator.Instance.WhenAvailable<UIManager>(ui =>
+            {
+                ui.SetInteractionUIController(this);
+                Debug.Log("[InteractionUIController] Registered with UIManager");
+            });
+        }
+
         private void Start()
         {
             HideInteractionPrompt();

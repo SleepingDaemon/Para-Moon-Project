@@ -1,13 +1,15 @@
-﻿using Unity.VisualScripting;
+﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace ParaMoon
 {
-    public class InventoryManager : MonoBehaviour, IInventoryProvider
+    public class InventoryManager : HighlightableBase, IInventoryProvider, IContainer
     {
         [SerializeField] InventoryData _inventoryData;
-        [SerializeField] ContainerType _type = ContainerType.Storage;
+        [SerializeField] InteractionData _interactionData;
 
+        InventoryUIController _inventoryUIController;
         InventorySystem _inventory;
         InventoryGridView _inventoryUI;
 
@@ -19,6 +21,24 @@ namespace ParaMoon
         private void Awake()
         {
             InitializeInventory();
+            ConnectToUIController();
+        }
+
+        private void ConnectToUIController()
+        {
+            DI.WhenAvailable<UIManager>(ui =>
+            {
+                _inventoryUIController = ui.GetInventoryUIController();
+
+                if (_inventoryUIController != null)
+                {
+                    _inventoryUIController.Initialize(_inventory, null);
+                }
+                else
+                {
+                    Debug.LogWarning("[InventoryManager] Inventory UI Controller not available!");
+                }
+            });
         }
 
         private void InitializeInventory()
@@ -30,6 +50,44 @@ namespace ParaMoon
             }
 
             _inventory = new InventorySystem(_inventoryData);
+        }
+
+        private void Start()
+        {
+            if (string.IsNullOrEmpty(_interactionData.PromptText))
+                _interactionData.PromptText = $"Open {_displayName}";
+
+            if (_interactionData.Type != InteractionType.Open)
+                _interactionData.Type = InteractionType.Open;
+
+            if (string.IsNullOrEmpty(_displayName) && _inventoryData != null)
+                _displayName = _inventoryData.name;
+        }
+
+        public bool CanInteract(IInteractor interactor)
+        {
+            return interactor != null && interactor.GameObject.GetComponent<PlayerInventory>() != null;
+        }
+
+        public InteractionData GetInteractionData()
+        {
+            return _interactionData;
+        }
+
+        public void Open(IInteractor interactor)
+        {
+            // Get the interactor
+            if (interactor == null)
+                Debug.LogError($"[InventoryManager] Interactor/EntityInventory is null");
+
+            UIManager ui = DI.Get<UIManager>();
+            ui.OpenContainerUI(_inventory);
+        }
+
+        public void Close(IInteractor interactor)
+        {
+            UIManager ui = DI.Get<UIManager>();
+            ui.CloseContainerUI();
         }
 
         //[ContextMenu("Add Test Items")]

@@ -148,7 +148,6 @@ GameObject:
   - component: {fileID: 8993295336071759160}
   - component: {fileID: 8468420850808506344}
   - component: {fileID: 5729300159251799238}
-  - component: {fileID: 5508201065210210498}
   m_Layer: 5
   m_Name: EROSPanel
   m_TagString: Untagged
@@ -274,22 +273,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4055
---- !u!114 &5508201065210210498
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4086844582712243289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fdb7d1cf3158fb43921c501f03ef2a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentToRegister: {fileID: 3380212854323105677}
-  _identifier: EROSPanel
-  _registerOnAwake: 1
-  _unregisterOnDestroy: 1
 --- !u!1 &7234721852964841792
 GameObject:
   m_ObjectHideFlags: 0
@@ -1205,7 +1188,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _inventoryData: {fileID: 11400000, guid: 150eb00d822f50e43a43d7fedd667641, type: 2}
-  _gridContainer: {fileID: 5986053012050823367}
+  _gridContainer: {fileID: 7962501698794395386}
   _slotPrefab: {fileID: 7351640752463174035, guid: 1d2b770163157c44aab906a5fe791ac3, type: 3}
   _itemPrefab: {fileID: 3665019607477871044, guid: 53ef0d16dff0c334498e844200f82dc5, type: 3}
   _normalSlotColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1225,6 +1208,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 1
   m_VerticalFit: 1
+--- !u!224 &7962501698794395386 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8401257025293112883, guid: 47fe5fce4c4c9454a893fc7eff2c8e43, type: 3}
+  m_PrefabInstance: {fileID: 1880041579604623561}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1897374006301958025
 PrefabInstance:
   m_ObjectHideFlags: 0

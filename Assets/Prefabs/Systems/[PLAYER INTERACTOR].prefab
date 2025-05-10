@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2393765122405433997
+--- !u!1 &1340665225044851543
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9100885528848257750}
-  - component: {fileID: 6478766161054209254}
+  - component: {fileID: 8417424274452339351}
+  - component: {fileID: 9177086534088855019}
   m_Layer: 0
-  m_Name: '[SCENE MANAGER]'
+  m_Name: '[PLAYER INTERACTOR]'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &9100885528848257750
+--- !u!4 &8417424274452339351
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2393765122405433997}
+  m_GameObject: {fileID: 1340665225044851543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,28 +32,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6478766161054209254
+--- !u!114 &9177086534088855019
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2393765122405433997}
+  m_GameObject: {fileID: 1340665225044851543}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb42d83bf9a3f9a47bb5dec507c709b7, type: 3}
+  m_Script: {fileID: 11500000, guid: 56b3db22407daca4a9f0c48a34179fba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _dontDestroyOnLoad: 1
   _autoInitialize: 1
-  _bootSceneName: Boot
-  _uiSceneName: GameUI
-  _defaultTransition:
-    Type: 1
-    Duration: 0.5
-    FadeColor: {r: 0, g: 0, b: 0, a: 1}
-  _defaultLoadingScreen:
-    Type: 1
-    LoadingSceneName: 
-    MinDisplayTime: 0.5
-    ShowProgressBar: 1
+  _cameraTransform: {fileID: 0}
+  _maxInteractionDistance: 2.5
+  _maxHighlightDistance: 50
+  _interactableMask:
+    serializedVersion: 2
+    m_Bits: 2560
+  _reticleUIController: {fileID: 3023879617041095174, guid: e20b86c01529a2b4688c5fa713129c09, type: 3}

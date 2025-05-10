@@ -15,6 +15,9 @@ namespace ParaMoon
         [SerializeField] GameObject[] _coreServicePrefabs;
         [SerializeField] float _initializationTimeout = 10f;
 
+        [Inject] SceneManagerService _sceneManager;
+        [Inject] UIManager _ui;
+
         protected virtual void Awake()
         {
             RegisterCoreServices();
@@ -31,24 +34,32 @@ namespace ParaMoon
                 if (prefab == null)
                     continue;
 
-                // If the prefab is a ServiceBehaviour, it will self-register
-                // Otherwise we need to check if it's a service we should register manually
-                if (!prefab.TryGetComponent<MonoBehaviour>(out var serviceComponent))
+                // Check the component type for ServiceBehaviour
+                var serviceComponent = prefab.GetComponent<MonoBehaviour>();
+                if (serviceComponent == null)
                 {
                     Debug.LogError($"[Bootstrapper] Prefab {prefab.name} does not have a service component.");
                     continue;
                 }
 
-                // Use ServiceLocator to check if service already registered
                 var serviceType = serviceComponent.GetType();
-                var registerMethod = typeof(ServiceLocator).GetMethod("IsServiceRegistered").MakeGenericMethod(serviceType);
-                bool isRegistered = (bool)registerMethod.Invoke(ServiceLocator.Instance, null);
+
+                // Use new DI system to check registration
+                bool isRegistered = false;
+                if (DependencyInjector.Resolver.TryResolve(serviceType, out _))
+                    isRegistered = true;
 
                 if (!isRegistered)
                 {
                     var instance = Instantiate(prefab);
                     DontDestroyOnLoad(instance);
+
+                    // The service will self-register through ServiceBehaviour<T>
                     Debug.Log($"[Bootstrapper] Instantiated service: {prefab.name}");
+
+                    // Add MonoBehaviourInjector to ensure dependencies are injected
+                    if (instance.GetComponent<MonoBehaviourInjector>() == null)
+                        instance.AddComponent<MonoBehaviourInjector>();
                 }
             }
         }
@@ -103,14 +114,14 @@ namespace ParaMoon
         protected virtual void OnInitializationComplete()
         {
             // Ensure UIManager is initialized AFTER UI scene is confirmed to be loaded
-            if (ServiceLocator.Instance.TryGetService<SceneManagerService>(out var sceneManager))
+            if (_sceneManager != null)
             {
-                if (sceneManager.IsSceneLoaded("GameUI"))
+                if (_sceneManager.IsSceneLoaded("GameUI"))
                     InitializeUIManager();
                 else
                 {
                     // Wait for the UI scene to load first, then initialize UIManager
-                    sceneManager.LoadSceneAdditively("GameUI", () =>
+                    _sceneManager.LoadSceneAdditively("GameUI", () =>
                     {
                         InitializeUIManager();
                     });
@@ -122,20 +133,19 @@ namespace ParaMoon
 
         private void InitializeUIManager()
         {
-            if (ServiceLocator.Instance.TryGetService<UIManager>(out var uiManager))
+            ServiceLocator.Instance.WhenAvailable<UIManager>(ui =>
             {
-                Debug.Log("[Bootstrapper] Ensuring UIManager is initialized");
-
-                if (uiManager == null)
+                // Initialize UIManager
+                if (ui != null)
                 {
-                    // Wait a frame to allow UI elements to register with ReferenceRegistry
-                    StartCoroutine(DelayedUIManagerInitialization(uiManager));
+                    ui.Initialize();
+                    Debug.Log("[Bootstrapper] UIManager initialized");
                 }
-            }
-            else
-            {
-                Debug.LogError("[Bootstrapper] UIManager not available after initialization.");
-            }
+                else
+                    StartCoroutine(DelayedUIManagerInitialization(ui));
+            });
+
+            //StartCoroutine(DelayedUIManagerInitialization(_ui));
         }
 
         private IEnumerator DelayedUIManagerInitialization(UIManager uiManager)

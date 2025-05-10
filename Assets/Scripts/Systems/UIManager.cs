@@ -2,15 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ParaMoon
 {
     [Injectable]
-    [SceneExported("UIManager")]
     public class UIManager : ServiceBehaviour<UIManager>
     {
         public event Action OnUIInitialized;
-        public bool IsFullyInitialized { get; private set; } = false;
 
         // Canvas References
         Canvas _mainCanvas;
@@ -30,13 +29,17 @@ namespace ParaMoon
         GameObject _armorInventoryWindow;
         //GameObject notificationLayer;
 
-        [Inject] InventoryUIController _inventoryController;
-        InteractionUIController _promptController;
+        [Inject] GameManager _gameManager;
+        [Inject] InputManager _inputManager;
+        //[Inject] HighlightManager _highlightManager;
+        InventoryUIController _inventoryController;
+        InteractionUIController _interactionPrompt;
+        PlayerInventory _playerInventory;
         InventoryGridView _playerInventoryUI;
         InventoryGridView _containerInventoryUI;
         InventoryGridView _armorInventoryUI;
-        ContainerInteractionUI _containerInteractionUI;
         LoadingScreenController _loadingScreen;
+        bool _uiReferencesFound = false;
 
         UIState _currentState = UIState.Gameplay;
         Stack<UIState> _stateHistory = new();
@@ -56,11 +59,8 @@ namespace ParaMoon
 
         protected override void OnDestroy()
         {
-            if (ServiceLocator.Instance.TryGetService<GameManager>(out var gameManager))
-                gameManager.OnGameStateChanged -= OnGameStateChanged;
-
-            if (ServiceLocator.Instance.TryGetService<InputManager>(out var inputManager))
-                inputManager.OnToggleMenu -= ToggleMenuLayer;
+            _gameManager.OnGameStateChanged -= OnGameStateChanged;
+            _inputManager.OnMenuToggleRequested -= ToggleEROSMenu;
 
             base.OnDestroy();
         }
@@ -70,145 +70,171 @@ namespace ParaMoon
         public override void Initialize()
         {
             base.Initialize();
-            IsFullyInitialized = false;
 
             FindUIReferences();
 
-            // Register with game manager
-            if (ServiceLocator.Instance.TryGetService<GameManager>(out var gameManager))
-                gameManager.OnGameStateChanged += OnGameStateChanged;
-            else
-                ServiceLocator.Instance.WhenAvailable<GameManager>(gm =>
-                    gm.OnGameStateChanged += OnGameStateChanged);
+            ServiceLocator.Instance.WhenAvailable<GameManager>(gm =>
+                gm.OnGameStateChanged += OnGameStateChanged);
 
-            // Register with input manager
-            if (ServiceLocator.Instance.TryGetService<InputManager>(out var inputManager))
-                inputManager.OnToggleMenu += ToggleMenuLayer;
-            else
-                ServiceLocator.Instance.WhenAvailable<InputManager>(im =>
-                    im.OnToggleMenu += ToggleMenuLayer);
+            ServiceLocator.Instance.WhenAvailable<InputManager>(im =>
+                im.OnMenuToggleRequested += ToggleEROSMenu);
 
             SetUIState(UIState.Gameplay);
 
-            IsFullyInitialized = true;
             OnUIInitialized?.Invoke();
             Debug.Log("[UIManager] UI Manager fully initialized and ready");
         }
 
         private void FindUIReferences()
         {
-
-            if (ServiceLocator.Instance.TryGetService<ReferenceRegistry>(out var registry))
+            // Find all UI layers in the "GameUI" scene
+            try
             {
-                if (registry == null)
+                // First ensure we're looking in the right scene
+                Scene gameUIScene = SceneManager.GetSceneByName("GameUI");
+                if (!gameUIScene.isLoaded)
                 {
-                    Debug.LogWarning("[UIManager] ReferenceRegistry service is null, waiting for it to be available");
-                    ServiceLocator.Instance.WhenAvailable<ReferenceRegistry>(r => {
-                        registry = r;
-                        // Try to find references again when registry becomes available
-                        FindUIReferences();
-                    });
+                    Debug.LogError("[UIManager] GameUI scene is not loaded! Cannot find UI references.");
                     return;
                 }
 
-                // Get references from the registry
-                _mainCanvas = registry.GetReference<Canvas>("MainCanvas");
+                // Check if we've already found references successfully
+                if (_uiReferencesFound)
+                    return;
+
+                Debug.Log("[UIManager] Finding UI references in GameUI scene");
+
+                // Find canvases first
+                _mainCanvas = GameObject.FindGameObjectWithTag("MainCanvas")?.GetComponent<Canvas>();
                 if (_mainCanvas == null)
-                    Debug.LogWarning("[UIManager] Main canvas not found in ReferenceRegistry");
+                    Debug.LogWarning("[UIManager] Could not find MainCanvas with tag 'MainCanvas'");
 
-                _persistentLayer = registry.GetReference<RectTransform>("PersistentLayer")?.gameObject;
-                if (_persistentLayer == null)
-                    Debug.LogWarning("[UIManager] Persistent layer not found in ReferenceRegistry");
+                _cameraCanvas = GameObject.Find("CameraCanvas")?.GetComponent<Canvas>();
+                _worldSpaceCanvas = GameObject.Find("WorldSpaceCanvas")?.GetComponent<Canvas>();
 
-                _gameplayHUDLayer = registry.GetReference<RectTransform>("GameplayHUDLayer")?.gameObject;
-                if (_gameplayHUDLayer == null)
-                    Debug.LogWarning("[UIManager] Gameplay HUD layer not found in ReferenceRegistry");
+                // Find UI layers
+                _persistentLayer = GameObject.Find("PersistentLayer");
+                _gameplayHUDLayer = GameObject.Find("GameplayHUDLayer");
 
-                _erosLayer = registry.GetReference<RectTransform>("EROSPanel")?.gameObject;
-                if (_erosLayer == null)
-                    Debug.LogWarning("[UIManager] EROS layer not found in ReferenceRegistry");
-                else
-                    _erosLayer.SetActive(false);
-
+                // Find InteractionUIController
                 if (_persistentLayer != null)
                 {
-                    _promptController = registry.GetReference<InteractionUIController>();
-                    _reticleLayer = registry.GetReference<Transform>("ReticleImage")?.gameObject;
-                    _highlighter = registry.GetReference<RectTransform>("Highlighter")?.gameObject;
+                    _interactionPrompt = FindFirstObjectByType<InteractionUIController>(FindObjectsInactive.Include);
+                    if (_interactionPrompt == null)
+                        _interactionPrompt = GameObject.Find("InteractionPrompts")?.GetComponent<InteractionUIController>();
+
+                    if (_interactionPrompt == null)
+                        Debug.LogWarning("[UIManager] Could not find InteractionUIController in PersistentLayer");
                 }
 
-                _inventoryController = registry.GetReference<InventoryUIController>();
-                if (_inventoryController == null)
-                    Debug.LogWarning("[UIManager] Inventory UI Controller not found in ReferenceRegistry");
+                // Find EROSLayer as child of MainCanvas
+                if (_mainCanvas != null)
+                {
+                    _erosLayer = _mainCanvas.transform.Find("EROSPanel")?.gameObject;
+                    if (_erosLayer == null)
+                        Debug.LogWarning("[UIManager] Could not find EROSLayer under MainCanvas");
+                    else if (_erosLayer.activeInHierarchy)
+                        _erosLayer.SetActive(false);
+                }
+
+                _reticleLayer = GameObject.Find("ReticleLayer");
+                _highlighter = GameObject.Find("Highlighter");
+
+                // Find inventory windows
+                _playerInventoryWindow = GameObject.Find("InventoryWindow");
+                _playerInventoryUI = _playerInventoryWindow?.GetComponent<InventoryGridView>();
+                _containerInventoryWindow = GameObject.Find("ContainerWindow");
+                _containerInventoryUI = _containerInventoryWindow?.GetComponent<InventoryGridView>();
+                _armorInventoryWindow = GameObject.Find("ArmorWindow");
+
+                // Find loading screen
+                //_loadingScreen = GameObject.FindObjectOfType<LoadingScreenController>();
+
+                // Check if we found most essential elements
+                bool essentialsFound = _mainCanvas != null && _erosLayer != null && _gameplayHUDLayer != null && _persistentLayer != null;
+                if (essentialsFound)
+                {
+                    _uiReferencesFound = true;
+                    Debug.Log("[UIManager] Essential UI references found successfully");
+                }
+                else
+                {
+                    Debug.LogError("[UIManager] Failed to find essential UI elements. UI functionality will be limited.");
+                }
+
+                // Log reference statuses for debugging
+                LogUIReferencesStatus();
             }
-            else
+            catch (Exception ex)
             {
-                Debug.LogError("[UIManager] ReferenceRegistry not available");
-                //FallbackUIReferenceSearch();
+                Debug.LogError($"[UIManager] Error finding UI references: {ex.Message}");
             }
+        }
+
+        private void LogUIReferencesStatus()
+        {
+            Debug.Log($"[UIManager] UI References Status:\n" +
+                $"MainCanvas: {(_mainCanvas != null ? "Found" : "Missing")}\n" +
+                $"CameraCanvas: {(_cameraCanvas != null ? "Found" : "Missing")}\n" +
+                $"WorldSpaceCanvas: {(_worldSpaceCanvas != null ? "Found" : "Missing")}\n" +
+                $"PersistentLayer: {(_persistentLayer != null ? "Found" : "Missing")}\n" +
+                $"GameplayHUDLayer: {(_gameplayHUDLayer != null ? "Found" : "Missing")}\n" +
+                $"EROSLayer: {(_erosLayer != null ? "Found" : "Missing")}\n" +
+                $"ReticleLayer: {(_reticleLayer != null ? "Found" : "Missing")}\n" +
+                $"Highlighter: {(_highlighter != null ? "Found" : "Missing")}\n" +
+                $"PlayerInventoryWindow: {(_playerInventoryWindow != null ? "Found" : "Missing")}\n" +
+                $"ContainerInventoryWindow: {(_containerInventoryWindow != null ? "Found" : "Missing")}\n" +
+                $"ArmorInventoryWindow: {(_armorInventoryWindow != null ? "Found" : "Missing")}\n" +
+                $"LoadingScreen: {(_loadingScreen != null ? "Found" : "Missing")}");
         }
 
         /// <summary>
         /// Toggles the eROS layer visibility and switches input action map
         /// </summary>
-        public void ToggleMenuLayer()
+        /// <summary>
+        /// Toggles the EROS menu visibility and handles all related state changes in one place
+        /// </summary>
+        public void ToggleEROSMenu()
         {
             if (_erosLayer == null)
             {
-                Debug.LogWarning("[UIManager] eROS layer is not assigned, cannot toggle menu layer");
-
-                // Try to find the reference again
+                Debug.LogWarning("[UIManager] EROS layer is not assigned, cannot toggle menu");
                 FindUIReferences();
-
                 if (_erosLayer == null)
                     return;
             }
 
-            // If currently in gameplay, show eROS
-            if (_currentState == UIState.Gameplay)
-            {
-                // Set eROS layer active
-                _erosLayer.SetActive(true);
+            bool showingErosMenu = _currentState == UIState.EROSMenu;
 
-                // Push the EROS state to the state history
-                PushUIState(UIState.EROSMenu);
-                if (ServiceLocator.Instance.TryGetService<GameManager>(out var gameManager))
-                    gameManager.SetGameState(GameManager.GameState.EROS);
-                else
-                    Debug.LogWarning("[UIManager] GameManager not available, cannot set game state to EROS");
-
-                //if (ServiceLocator.Instance.TryGetService<InputManager>(out var inputManager))
-                //{
-                //    // Switch to EROS input action map
-                //    inputManager.EnableUIActionMap();
-                //}
-                //else
-                //{
-                //    Debug.LogWarning("[UIManager] InputManager not available, cannot set input action map to EROS");
-                //}
-            }
-            // If in EROS state (eROS is active), hide it and return to gameplay
-            else if (_currentState == UIState.EROSMenu)
+            // Toggle EROS menu state
+            if (showingErosMenu)
             {
-                // Hide eROS layer
+                // Explicitly close container inventory if open
+                var containerWindow = _inventoryController.GetContainerWindow();
+                if (containerWindow != null && containerWindow.activeInHierarchy)
+                    CloseContainerUI();
+
+                // Return to gameplay
                 _erosLayer.SetActive(false);
-
-                // Return to gameplay state
                 PopUIState();
-                if (ServiceLocator.Instance.TryGetService<GameManager>(out var gameManager))
-                    gameManager.SetGameState(GameManager.GameState.Gameplay);
-                else
-                    Debug.LogWarning("[UIManager] GameManager not available, cannot set game state to EROS");
 
-                //if (ServiceLocator.Instance.TryGetService<InputManager>(out var inputManager))
-                //{
-                //    // Switch to EROS input action map
-                //    inputManager.EnableUIActionMap();
-                //}
-                //else
-                //{
-                //    Debug.LogWarning("[UIManager] InputManager not available, cannot set input action map to EROS");
-                //}
+                if (_gameManager != null)
+                    _gameManager.SetGameState(GameManager.GameState.Gameplay);
+
+                if (_inputManager != null)
+                    _inputManager.SetInputMode(false);
+            }
+            else
+            {
+                // Show EROS menu
+                _erosLayer.SetActive(true);
+                PushUIState(UIState.EROSMenu);
+
+                if (_gameManager != null)
+                    _gameManager.SetGameState(GameManager.GameState.EROS);
+
+                if (_inputManager != null)
+                    _inputManager.SetInputMode(true);
             }
         }
 
@@ -311,15 +337,12 @@ namespace ParaMoon
 
         #region Inventory
 
-        public void OpenContainerUI(InventoryManager containerInventory, InventoryManager playerInventory, string containerName)
+        public void OpenContainerUI(IInventory containerInventory)
         {
             // Set UI state to EROS (menu)
             PushUIState(UIState.EROSMenu);
 
-            _inventoryController.OpenContainerUI(containerInventory.Inventory, containerName);
-
-            // Initialize and show the container-player UI
-            //_containerInteractionUI.Initialize(containerInventory, playerInventory, containerName);
+            _inventoryController.OpenContainerUI(containerInventory);
         }
 
         public void CloseContainerUI()
@@ -374,24 +397,12 @@ namespace ParaMoon
 
         public InteractionUIController GetInteractionUIController()
         {
-            return _promptController;
+            return _interactionPrompt;
         }
 
         public LoadingScreenController GetLoadingScreenController()
         {
             return _loadingScreen;
-        }
-
-        public InventoryGridView GetContainerUI(ContainerType type)
-        {
-            if (type == ContainerType.Player)
-                return _playerInventoryUI;
-            
-            if (type == ContainerType.Storage)
-                return _containerInventoryUI;
-
-            Debug.LogError($"[UIManager] No container UI found for type: {type}");
-            return null;
         }
 
         public InventoryUIController GetInventoryUIController()
@@ -402,6 +413,11 @@ namespace ParaMoon
         internal void SetInventoryUIController(InventoryUIController inventoryUIController)
         {
             _inventoryController = inventoryUIController;
+        }
+
+        internal void SetInteractionUIController(InteractionUIController interactionUIController)
+        {
+            _interactionPrompt = interactionUIController;
         }
 
         #endregion
